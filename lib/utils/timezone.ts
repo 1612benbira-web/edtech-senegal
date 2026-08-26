@@ -12,3 +12,20 @@ export function getTodayInTimezone(timezone: string = "Africa/Dakar"): string {
   });
   return formatter.format(new Date()); // en-CA produit directement YYYY-MM-DD
 }
+/**
+ * Renvoie "Bonjour" ou "Bonsoir" selon l'heure actuelle dans le fuseau
+ * donné (Africa/Dakar par défaut) — pas selon l'heure locale de l'appareil
+ * du visiteur, pour rester cohérent quel que soit l'endroit depuis lequel
+ * le site est consulté. Bascule à 18h : avant, "Bonjour" ; à partir de
+ * 18h (et jusqu'à 4h inclus), "Bonsoir".
+ */
+export function getTimeBasedGreeting(timezone: string = "Africa/Dakar"): "Bonjour" | "Bonsoir" {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      hour12: false,
+    }).format(new Date())
+  );
+  return hour >= 5 && hour < 18 ? "Bonjour" : "Bonsoir";
+}

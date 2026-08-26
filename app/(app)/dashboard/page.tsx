@@ -11,7 +11,7 @@ import { ProgramCard } from "@/components/curriculum/program-card";
 import { AddProgramModal } from "@/components/curriculum/add-program-modal";
 import { Badge } from "@/components/ui/badge";
 import { getLevelLeaderboard, getMyLevelRank } from "@/lib/queries/leaderboard";
-
+import { getTimeBasedGreeting } from "@/lib/utils/timezone";
 export const metadata: Metadata = { title: "Tableau de bord" };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
@@ -19,8 +19,12 @@ const rankMedals = ["🥇", "🥈", "🥉"];
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("first_name, xp_total, level_id, series_id, school_levels(name), school_series(name)").eq("id", user!.id).single();
-  if (!profile?.level_id) redirect("/onboarding");
+  const { data: profile } = await supabase.from("profiles").select("first_name, xp_total, level_id, series_id, timezone, school_levels(name), school_series(name)").eq("id", user!.id).single();
+if (!profile?.level_id) redirect("/onboarding");
+
+// "Bonjour"/"Bonsoir" selon l'heure du fuseau de l'élève (Africa/Dakar par
+// défaut, même logique que le quiz du jour — voir gamificationService.ts).
+const greeting = getTimeBasedGreeting((profile as any).timezone ?? "Africa/Dakar");
 
   const [{ data: availableLevelSubjects }, programmes, streak, earnedBadges, leaderboard, myRank] = await Promise.all([
     supabase.from("level_subjects").select("subject_id, series_id, is_optional, subjects(id, name, icon)").eq("level_id", profile.level_id),
@@ -48,7 +52,7 @@ export default async function DashboardPage() {
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100"><Sparkles className="h-3 w-3" /> Espace élève</span>
-            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">Bonjour, {profile.first_name ?? ""} ! 👋</h1>
+            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">{greeting}, {profile.first_name ?? ""} ! 👋</h1>
             <p className="mt-2 max-w-lg text-sm leading-6 text-emerald-50/70">Continue ton apprentissage là où tu t'es arrêté et garde ton rythme.</p>
             {nextLesson && <Link href={`/lesson/${nextLesson}`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#064c35] transition hover:bg-emerald-50 dark:bg-white dark:text-[#064c35]"><span>Continuer l'apprentissage</span><ArrowRight className="h-4 w-4" /></Link>}
           </div>
