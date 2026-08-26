@@ -1,7 +1,57 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { profileUpdateSchema } from "@/lib/validations/schemas";
+
+export type UpdateNameState = { error?: string; success?: boolean } | null;
+
+/**
+ * Permet à l'élève de corriger son prénom/nom lui-même, sans passer par
+ * une modification manuelle en base (SQL). Réutilise `profileUpdateSchema`
+ * (lib/validations/schemas.ts), déjà prévu pour ça mais pas encore branché
+ * ailleurs. Seuls first_name/last_name sont modifiables ici — jamais
+ * role, xp_total, level_id, etc. (voir la remarque dans schemas.ts).
+ */
+export async function updateNameAction(
+  _prev: UpdateNameState,
+  formData: FormData
+): Promise<UpdateNameState> {
+  const parsed = profileUpdateSchema
+    .pick({ firstName: true, lastName: true })
+    .safeParse({
+      firstName: String(formData.get("firstName") || "").trim(),
+      lastName: String(formData.get("lastName") || "").trim(),
+    });
+
+  if (!parsed.success) {
+    return { error: "Merci de renseigner un prénom et un nom valides." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ first_name: parsed.data.firstName, last_name: parsed.data.lastName })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: "Impossible d'enregistrer ces informations pour le moment. Réessaie plus tard." };
+  }
+
+  // Le prénom/nom apparaît aussi sur le dashboard (salutation) et dans la
+  // barre du haut (menu utilisateur) — on invalide le cache de tout le
+  // groupe (app) pour que ces pages affichent la nouvelle valeur sans
+  // attendre une expiration naturelle du cache.
+  revalidatePath("/", "layout");
+
+  return { success: true };
+}
 
 export type DeleteAccountState = { error?: string } | null;
 

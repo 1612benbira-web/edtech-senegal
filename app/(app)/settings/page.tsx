@@ -4,6 +4,7 @@ import { AlertTriangle, User, GraduationCap, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { DeleteAccountDialog } from "./delete-account-dialog";
+import { EditNameForm } from "./edit-name-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = { title: "Paramètres" };
@@ -38,12 +39,7 @@ export default async function SettingsPage() {
           <h2 className="font-display font-semibold text-foreground">Profil</h2>
         </div>
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-xs text-muted-foreground">Nom</dt>
-            <dd className="text-foreground">
-              {profile?.first_name} {profile?.last_name}
-            </dd>
-          </div>
+          <EditNameForm firstName={profile?.first_name ?? null} lastName={profile?.last_name ?? null} />
           <div>
             <dt className="text-xs text-muted-foreground">Email</dt>
             <dd className="text-foreground">{profile?.email}</dd>
