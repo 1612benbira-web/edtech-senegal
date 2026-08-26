@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 25% 98%;
+    --foreground: 222 47% 11%;
+    --primary: 153 78% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 43 96% 56%;
+    --secondary-foreground: 222 47% 11%;
+    --success: 153 62% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 40% 15%;
+    --danger: 6 78% 52%;
+    --danger-foreground: 0 0% 100%;
+    --info: 217 78% 51%;
+    --info-foreground: 0 0% 100%;
+    --muted: 210 25% 96%;
+    --muted-foreground: 215 16% 47%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 214 30% 91%;
+    --radius: 0.95rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --muted: 217 32% 14%;
+    --muted-foreground: 215 20% 68%;
+    --card: 222 40% 11%;
+    --card-foreground: 210 40% 96%;
+    --border: 217 25% 22%;
+    --primary: 153 62% 46%;
+    --primary-foreground: 222 47% 8%;
+  }
+
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground font-sans;
+    background-image:
+      radial-gradient(circle at 12% 0%, hsl(153 78% 20% / 0.035), transparent 28%),
+      radial-gradient(circle at 100% 18%, hsl(43 96% 56% / 0.035), transparent 24%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4 { @apply font-display; }
+}
+
+@layer utilities {
+  .glass { @apply border border-border/70 bg-white/75 backdrop-blur-xl; }
+  .premium-shadow { box-shadow: 0 18px 50px -28px hsl(222 47% 11% / 0.28); }
+}
+
+@layer components {
+  .dark .bg-white,
+  .dark .bg-white\/95,
+  .dark .bg-white\/90,
+  .dark .bg-white\/80,
+  .dark .bg-white\/75 { background-color: hsl(var(--card)); }
+
+  .dark .bg-slate-50,
+  .dark .bg-slate-50\/70 { background-color: hsl(var(--muted)); }
+
+  .dark .bg-slate-100 { background-color: hsl(217 32% 18%); }
+  .dark .bg-slate-950 { background-color: hsl(222 47% 6%); }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200,
+  .dark .border-slate-200\/80,
+  .dark .border-slate-300 { border-color: hsl(var(--border)); }
+
+  .dark .text-slate-950,
+  .dark .text-slate-900,
+  .dark .text-slate-800 { color: hsl(var(--foreground)); }
+  .dark .text-slate-700,
+  .dark .text-slate-600 { color: hsl(215 20% 78%); }
+  .dark .text-slate-500 { color: hsl(215 20% 72%); }
+  .dark .text-slate-400 { color: hsl(215 20% 74%); }
+  .dark .text-slate-300 { color: hsl(215 20% 82%); }
+  .dark .text-slate-200,
+  .dark .text-slate-100 { color: hsl(var(--foreground)); }
+
+  .dark .bg-emerald-50 { background-color: hsl(153 45% 13%); }
+  .dark .border-emerald-200 { border-color: hsl(153 45% 28%); }
+  .dark .text-emerald-700 { color: hsl(153 62% 64%); }
+  .dark .text-emerald-600 { color: hsl(153 62% 60%); }
+  .dark .bg-blue-50 { background-color: hsl(217 55% 16%); }
+  .dark .bg-violet-50 { background-color: hsl(263 45% 16%); }
+  .dark .bg-amber-50 { background-color: hsl(43 55% 15%); }
+  .dark .bg-orange-50 { background-color: hsl(25 55% 15%); }
+  .dark .ring-emerald-100 { --tw-ring-color: hsl(153 45% 28%); }
+
+  /* Renforcement du contraste pour les composants qui utilisent des classes
+     Tailwind explicites (notamment le dashboard et les badges). */
+  .dark .bg-slate-50\/70 { background-color: hsl(217 32% 15%) !important; }
+  .dark .bg-slate-50\/60 { background-color: hsl(217 32% 15%) !important; }
+  .dark .bg-slate-100 { background-color: hsl(217 32% 18%) !important; }
+  .dark .border-slate-100 { border-color: hsl(217 25% 24%) !important; }
+  .dark .border-slate-200 { border-color: hsl(var(--border)) !important; }
+  .dark .border-slate-200\/80 { border-color: hsl(var(--border)) !important; }
+  .dark .text-slate-950,
+  .dark .text-slate-900,
+  .dark .text-slate-800 { color: hsl(var(--foreground)) !important; }
+  .dark .text-slate-700 { color: hsl(210 40% 90%) !important; }
+  .dark .text-slate-600 { color: hsl(215 20% 82%) !important; }
+  .dark .text-slate-500 { color: hsl(215 20% 76%) !important; }
+  .dark .text-slate-400 { color: hsl(215 20% 70%) !important; }
+  .dark .text-slate-300 { color: hsl(215 20% 84%) !important; }
+  .dark .text-slate-200,
+  .dark .text-slate-100 { color: hsl(var(--foreground)) !important; }
+  .dark .bg-white { background-color: hsl(var(--card)) !important; }
+  .dark .bg-white\/95,
+  .dark .bg-white\/90,
+  .dark .bg-white\/80,
+  .dark .bg-white\/75 { background-color: hsl(var(--card)) !important; }
+  .dark .hover\:bg-slate-50:hover { background-color: hsl(217 32% 17%) !important; }
+  .dark .hover\:bg-emerald-50:hover { background-color: hsl(153 45% 15%) !important; }
+  .dark .bg-emerald-50 { background-color: hsl(153 45% 13%) !important; }
+  .dark .bg-emerald-50\/60 { background-color: hsl(153 45% 13%) !important; }
+  .dark .text-emerald-700 { color: hsl(153 62% 68%) !important; }
+  .dark .text-emerald-600 { color: hsl(153 62% 62%) !important; }
+  .dark .border-emerald-200 { border-color: hsl(153 45% 30%) !important; }
+  .dark .text-amber-500 { color: hsl(43 96% 65%) !important; }
+  .dark .bg-amber-50 { background-color: hsl(43 55% 15%) !important; }
+  .dark .text-blue-600 { color: hsl(217 85% 72%) !important; }
+  .dark .text-violet-600 { color: hsl(263 80% 76%) !important; }
+  .dark .text-orange-500 { color: hsl(25 90% 70%) !important; }
+  .dark .bg-blue-50 { background-color: hsl(217 55% 16%) !important; }
+  .dark .bg-violet-50 { background-color: hsl(263 45% 16%) !important; }
+  .dark .bg-orange-50 { background-color: hsl(25 55% 15%) !important; }
+
+  /* Badges : conserver une vraie lisibilité en mode sombre. */
+  .dark .bg-muted { background-color: hsl(217 32% 18%) !important; }
+  .dark .text-muted-foreground { color: hsl(215 20% 78%) !important; }
+  .dark .text-primary { color: hsl(var(--primary)) !important; }
+  .dark .bg-primary\/10 { background-color: hsl(153 62% 46% / 0.16) !important; }
+  .dark .bg-success\/10 { background-color: hsl(153 62% 46% / 0.16) !important; }
+  .dark .text-success { color: hsl(153 62% 70%) !important; }
+}
