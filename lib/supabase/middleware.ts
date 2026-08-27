@@ -9,7 +9,7 @@ const PUBLIC_PATHS = [
   "/auth/callback",
 ];
 
-function isPublicPath(pathname: string): boolean {
+function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
     (path) =>
       pathname === path ||
@@ -17,70 +17,28 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export async function updateSession(
-  request: NextRequest
-) {
-  const pathname = request.nextUrl.pathname;
-
-  /*
-   * =====================================================
-   * ROUTES PUBLIQUES
-   * =====================================================
-   *
-   * IMPORTANT :
-   * On ne contacte PAS Supabase pour les routes publiques.
-   *
-   * Cela évite qu'une indisponibilité ou un délai de
-   * réponse Supabase bloque /login, /register, etc.
-   */
-  if (isPublicPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  /*
-   * =====================================================
-   * VARIABLES SUPABASE
-   * =====================================================
-   */
-
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  /*
-   * Si Supabase n'est pas configuré, on laisse
-   * la requête continuer.
-   *
-   * Cela évite une boucle de redirection ou un
-   * middleware bloqué.
-   */
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
-      "Supabase environment variables are missing."
-    );
-
-    return NextResponse.next();
-  }
-
-  /*
-   * =====================================================
-   * RESPONSE
-   * =====================================================
-   */
-
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   /*
-   * =====================================================
-   * CLIENT SUPABASE SERVEUR
-   * =====================================================
+   * Si Supabase n'est pas configuré,
+   * on laisse la requête continuer.
    */
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      "Supabase environment variables are missing."
+    );
+
+    return response;
+  }
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -94,10 +52,7 @@ export async function updateSession(
         setAll(cookiesToSet) {
           cookiesToSet.forEach(
             ({ name, value }) => {
-              request.cookies.set(
-                name,
-                value
-              );
+              request.cookies.set(name, value);
             }
           );
 
@@ -121,90 +76,62 @@ export async function updateSession(
     }
   );
 
-  /*
-   * =====================================================
-   * RÉCUPÉRATION DE L'UTILISATEUR
-   * =====================================================
-   */
+  const pathname = request.nextUrl.pathname;
 
+  /*
+   * Les routes publiques ne nécessitent
+   * aucune vérification d'authentification.
+   */
+  if (isPublicPath(pathname)) {
+    return response;
+  }
+
+  /*
+   * Vérification de la session Supabase.
+   */
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
   /*
-   * =====================================================
-   * UTILISATEUR NON CONNECTÉ
-   * =====================================================
+   * En cas d'erreur Supabase, on évite une
+   * boucle de redirection ou un blocage.
    */
+  if (error) {
+    console.error(
+      "Supabase auth error:",
+      error.message
+    );
 
+    return response;
+  }
+
+  /*
+   * Utilisateur non connecté :
+   * redirection vers /login.
+   */
   if (!user) {
-    const loginUrl =
-      request.nextUrl.clone();
+    const loginUrl = request.nextUrl.clone();
 
     loginUrl.pathname = "/login";
-
     loginUrl.search = "";
 
-    /*
-     * On mémorise la page demandée.
-     */
     loginUrl.searchParams.set(
       "redirectTo",
       pathname
     );
 
-    return NextResponse.redirect(
-      loginUrl
-    );
+    return NextResponse.redirect(loginUrl);
   }
 
   /*
-   * =====================================================
-   * ROUTES ADMIN
-   * =====================================================
+   * Utilisateur connecté :
+   * la requête continue.
+   *
+   * La vérification du rôle admin doit être faite
+   * dans les pages/actions serveur admin et protégée
+   * par les RLS Supabase.
    */
-
-  const isAdminPath =
-    pathname === "/admin" ||
-    pathname.startsWith("/admin/");
-
-  if (isAdminPath) {
-    const {
-      data: profile,
-      error: profileError,
-    } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    /*
-     * L'utilisateur doit avoir le rôle admin.
-     */
-    if (
-      profileError ||
-      !profile ||
-      profile.role !== "admin"
-    ) {
-      const dashboardUrl =
-        request.nextUrl.clone();
-
-      dashboardUrl.pathname =
-        "/dashboard";
-
-      dashboardUrl.search = "";
-
-      return NextResponse.redirect(
-        dashboardUrl
-      );
-    }
-  }
-
-  /*
-   * =====================================================
-   * UTILISATEUR AUTORISÉ
-   * =====================================================
-   */
-
   return response;
 }
