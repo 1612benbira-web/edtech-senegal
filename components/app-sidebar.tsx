@@ -19,13 +19,24 @@ const SECONDARY_ITEMS = [
   { href: "/profile", label: "Profil", icon: User },
 ];
 
-export function AppSidebar({ logoutAction }: { logoutAction: () => void }) {
+export function AppSidebar({
+  logoutAction,
+  schoolName,
+}: {
+  logoutAction: () => void;
+  schoolName?: string;
+}) {
   const pathname = usePathname();
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/80 bg-white lg:flex">
       <div className="px-6 pb-5 pt-7">
         <BrandLogo />
+        {schoolName && (
+          <p className="mt-3 truncate text-[11px] font-semibold uppercase tracking-wide text-slate-400" title={schoolName}>
+            🏫 {schoolName}
+          </p>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1.5 px-4 pt-2">

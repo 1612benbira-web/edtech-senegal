@@ -7,6 +7,7 @@ import { markLessonStartedAction } from "../actions";
 import { LessonContent } from "@/components/lesson/lesson-content";
 import { CompleteLessonButton } from "../complete-lesson-button";
 import { getMyProgramme } from "@/lib/queries/programme";
+import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
 
 export default async function LessonPage({
   params,
@@ -20,6 +21,13 @@ export default async function LessonPage({
   const { data: { user } } = await authClient.auth.getUser();
   const { data: profile } = await authClient.from("profiles").select("level_id").eq("id", user!.id).single();
   if (!profile?.level_id || (lesson as any).chapters?.curriculums?.level_id !== profile.level_id) notFound();
+
+  // Le programme peut être publié sans être activé pour l'école de
+  // l'élève (multi-écoles) : on bloque l'accès direct par URL en plus
+  // du filtrage déjà fait par getMyProgramme() côté dashboard/programme.
+  const curriculumId = (lesson as any).chapters?.curriculum_id as string | undefined;
+  const schoolId = await getCurrentSchoolId();
+  if (!curriculumId || !(await isCurriculumAllowedForSchool(schoolId, curriculumId))) notFound();
 
   // Marque la leçon comme démarrée dès l'ouverture (sans bloquer le rendu).
   await markLessonStartedAction(params.lessonId);

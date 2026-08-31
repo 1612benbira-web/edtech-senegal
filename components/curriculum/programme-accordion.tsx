@@ -80,7 +80,7 @@ export function ProgrammeAccordion({ programmes }: { programmes: ProgrammeSubjec
             </button>
             {isOpen && (
               <div className="border-t border-border">
-                {subject.chapters.length === 0 ? <p className="p-5 text-sm text-muted-foreground">Aucun chapitre publié pour l'instant dans cette matière.</p> : subject.chapters.map((chapter) => <ChapterAccordion key={chapter.id} chapter={chapter} />)}
+                {subject.chapters.length === 0 ? <p className="p-5 text-sm text-muted-foreground">Aucun chapitre publié pour l&apos;instant dans cette matière.</p> : subject.chapters.map((chapter) => <ChapterAccordion key={chapter.id} chapter={chapter} />)}
               </div>
             )}
           </div>

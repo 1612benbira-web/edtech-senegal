@@ -25,7 +25,7 @@ export interface Database {
           series_id: string | null;
           daily_goal: number;
           timezone: string;
-          role: "student" | "admin" | "teacher";
+          role: "student" | "admin" | "teacher" | "school_admin";
           xp_total: number;
           last_seen_at: string | null;
           created_at: string;
@@ -88,6 +88,51 @@ export interface Database {
         Insert: Partial<Database["public"]["Tables"]["level_subjects"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["level_subjects"]["Row"]>;
         Relationships: [{ foreignKeyName: "level_subjects_level_id_fkey"; columns: ["level_id"]; isOneToOne: false; referencedRelation: "school_levels"; referencedColumns: ["id"] }, { foreignKeyName: "level_subjects_series_id_fkey"; columns: ["series_id"]; isOneToOne: false; referencedRelation: "school_series"; referencedColumns: ["id"] }, { foreignKeyName: "level_subjects_subject_id_fkey"; columns: ["subject_id"]; isOneToOne: false; referencedRelation: "subjects"; referencedColumns: ["id"] }];
+      };
+      // ============================================================
+      // MULTI-ÉCOLES (0017/0018)
+      // ============================================================
+      schools: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          code: string;
+          status: "active" | "inactive";
+          created_at: string;
+          updated_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["schools"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["schools"]["Row"]>;
+        Relationships: [];
+      };
+      school_members: {
+        Row: {
+          id: string;
+          school_id: string;
+          profile_id: string;
+          role: "student" | "teacher" | "school_admin";
+          status: "active" | "inactive";
+          created_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["school_members"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["school_members"]["Row"]>;
+        Relationships: [{ foreignKeyName: "school_members_school_id_fkey"; columns: ["school_id"]; isOneToOne: false; referencedRelation: "schools"; referencedColumns: ["id"] }, { foreignKeyName: "school_members_profile_id_fkey"; columns: ["profile_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
+      };
+      school_curriculums: {
+        Row: {
+          id: string;
+          school_id: string;
+          curriculum_id: string;
+          enabled: boolean;
+          created_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["school_curriculums"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["school_curriculums"]["Row"]>;
+        Relationships: [{ foreignKeyName: "school_curriculums_school_id_fkey"; columns: ["school_id"]; isOneToOne: false; referencedRelation: "schools"; referencedColumns: ["id"] }, { foreignKeyName: "school_curriculums_curriculum_id_fkey"; columns: ["curriculum_id"]; isOneToOne: false; referencedRelation: "curriculums"; referencedColumns: ["id"] }];
       };
       curriculums: {
         Row: {

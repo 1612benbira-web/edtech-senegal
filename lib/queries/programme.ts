@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
 
 export type LessonStatus = "not_started" | "in_progress" | "completed";
 
@@ -70,16 +71,53 @@ export async function getMyProgramme(
 
   const results: ProgrammeSubject[] = [];
 
+  // Résolu une seule fois pour tout le programme (évite un aller-retour
+  // Supabase par matière) : école active de l'élève, ou `null` si non
+  // rattaché (comptes créés avant le multi-écoles — voir schoolService.ts).
+  const schoolId = await getCurrentSchoolId();
+
   for (const subject of subjects) {
-    const { data: curriculum } = await supabase
-      .from("curriculums")
-      .select("id, description")
-      .eq("subject_id", subject.id)
-      .eq("level_id", levelId)
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Priorité 1 : un programme propre à l'école de l'élève (créé via
+    // /admin/schools/[id]/content) pour cette matière/ce niveau — il n'a
+    // pas besoin d'une ligne school_curriculums, son appartenance est
+    // directe (curriculums.school_id).
+    let rawCurriculum: { id: string; description: string | null } | null = null;
+
+    if (schoolId) {
+      const { data: owned } = await supabase
+        .from("curriculums")
+        .select("id, description")
+        .eq("subject_id", subject.id)
+        .eq("level_id", levelId)
+        .eq("status", "published")
+        .eq("school_id", schoolId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      rawCurriculum = owned;
+    }
+
+    // Priorité 2 : le programme national partagé, à condition d'être
+    // activé pour l'école de l'élève (ou pas de restriction d'école pour
+    // un compte non rattaché — voir isCurriculumAllowedForSchool).
+    let curriculum = rawCurriculum;
+    if (!curriculum) {
+      const { data: globalCurriculum } = await supabase
+        .from("curriculums")
+        .select("id, description")
+        .eq("subject_id", subject.id)
+        .eq("level_id", levelId)
+        .eq("status", "published")
+        .is("school_id", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      curriculum =
+        globalCurriculum && (await isCurriculumAllowedForSchool(schoolId, globalCurriculum.id))
+          ? globalCurriculum
+          : null;
+    }
 
     if (!curriculum) {
       results.push({
@@ -158,12 +196,22 @@ export async function getMyProgramme(
     const questionIds: string[] = [];
 
     if (lessonIds.length > 0) {
-      const { data: exerciseRows } = await supabase
+      let exerciseQuery = supabase
         .from("exercises")
         .select("id, lesson_id")
         .in("lesson_id", lessonIds)
         .eq("status", "published")
         .is("deleted_at", null);
+
+      // Un exercice privé (school_id renseigné) créé par une AUTRE école
+      // sur une leçon globale partagée ne doit jamais compter comme
+      // obligatoire pour cet élève — seuls les exercices globaux et ceux
+      // de sa propre école sont pris en compte.
+      exerciseQuery = schoolId
+        ? exerciseQuery.or(`school_id.is.null,school_id.eq.${schoolId}`)
+        : exerciseQuery.is("school_id", null);
+
+      const { data: exerciseRows } = await exerciseQuery;
 
       for (const exercise of exerciseRows ?? []) {
         const list = exercisesByLesson.get(exercise.lesson_id) ?? [];

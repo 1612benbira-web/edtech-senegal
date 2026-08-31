@@ -53,7 +53,7 @@ export default async function SeriesAdminPage() {
             </li>
           ))}
           {series.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucune série pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucune série pour l&apos;instant.</p>
           )}
         </ul>
       </AdminSection>

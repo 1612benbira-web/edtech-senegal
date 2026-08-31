@@ -41,10 +41,10 @@ export default async function CompetenciesAdminPage({
         title="Domaines & Compétences"
         description={
           <>
-            Un domaine regroupe plusieurs compétences au sein d'un programme (ex. domaine
-            "Nombres et calculs" → compétence "Fractions simples"). Les compétences sont
+            Un domaine regroupe plusieurs compétences au sein d&apos;un programme (ex. domaine
+            &quot;Nombres et calculs&quot; → compétence &quot;Fractions simples&quot;). Les compétences sont
             ensuite associées aux leçons et questions pour permettre le suivi de maîtrise
-            (voir la page "Ma progression" côté élève).
+            (voir la page &quot;Ma progression&quot; côté élève).
           </>
         }
       />
@@ -80,7 +80,7 @@ export default async function CompetenciesAdminPage({
           <AdminSection title="Ajouter une compétence">
             {domains.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Crée d'abord un domaine ci-dessus.
+                Crée d&apos;abord un domaine ci-dessus.
               </p>
             ) : (
               <div className="max-w-md">
@@ -145,7 +145,7 @@ export default async function CompetenciesAdminPage({
                 </div>
               ))}
               {domains.length === 0 && (
-                <p className="text-sm text-muted-foreground">Aucun domaine pour l'instant.</p>
+                <p className="text-sm text-muted-foreground">Aucun domaine pour l&apos;instant.</p>
               )}
             </div>
           </AdminSection>

@@ -96,7 +96,7 @@ export default async function ChaptersAdminPage({
                 />
               ))}
               {chapters.length === 0 && (
-                <p className="text-sm text-muted-foreground">Aucun chapitre pour l'instant.</p>
+                <p className="text-sm text-muted-foreground">Aucun chapitre pour l&apos;instant.</p>
               )}
             </div>
           </AdminSection>

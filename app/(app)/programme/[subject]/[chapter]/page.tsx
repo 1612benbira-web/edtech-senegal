@@ -94,7 +94,7 @@ export default async function ChapterPage({
         })}
         {lessons.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Aucune leçon publiée pour l'instant dans ce chapitre.
+            Aucune leçon publiée pour l&apos;instant dans ce chapitre.
           </div>
         )}
       </div>

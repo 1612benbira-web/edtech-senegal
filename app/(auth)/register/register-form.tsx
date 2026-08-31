@@ -66,6 +66,15 @@ export function RegisterForm() {
       </div>
 
       <div>
+        <Label htmlFor="schoolCode">Code établissement (optionnel)</Label>
+        <Input id="schoolCode" name="schoolCode" placeholder="EMD2026" error={state?.fieldErrors?.schoolCode} />
+        <FieldError id="schoolCode-error" message={state?.fieldErrors?.schoolCode} />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Ton école t&apos;a communiqué un code ? Renseigne-le pour accéder à ses programmes. Sinon, laisse ce champ vide.
+        </p>
+      </div>
+
+      <div>
         <Label htmlFor="password">Mot de passe</Label>
         <Input
           id="password"

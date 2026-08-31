@@ -68,7 +68,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
       <Card>
         <h2 className="mb-3 font-display font-semibold text-foreground">Programme et progression</h2>
         {subjectsProgress.length === 0 && (
-          <p className="text-sm text-muted-foreground">Aucune matière ajoutée pour l'instant.</p>
+          <p className="text-sm text-muted-foreground">Aucune matière ajoutée pour l&apos;instant.</p>
         )}
         <div className="space-y-3">
           {subjectsProgress.map((sp) => (

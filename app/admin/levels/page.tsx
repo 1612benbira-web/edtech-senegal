@@ -44,7 +44,7 @@ export default async function LevelsAdminPage() {
             </li>
           ))}
           {cycles.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucun cycle pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucun cycle pour l&apos;instant.</p>
           )}
         </ul>
       </AdminSection>
@@ -77,14 +77,14 @@ export default async function LevelsAdminPage() {
                   <DeleteButton
                     action={deleteLevelAction}
                     id={level.id}
-                    confirmMessage={`Supprimer le niveau "${level.name}" ?`}
+                    confirmMessage={`Supprimer le niveau "${level.name}" ? Cela échouera si des programmes, séries ou matières y sont encore rattachés.`}
                   />
                 }
               />
             </li>
           ))}
           {levels.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucun niveau pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucun niveau pour l&apos;instant.</p>
           )}
         </ul>
       </AdminSection>

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Flame, Award, Users } from "lucide-react";
 import { getStudents } from "@/lib/queries/admin-stats";
 import { getPresence } from "@/lib/utils/presence";
 import { PresenceBadge, StudentRowActions } from "@/components/admin/student-row-actions";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { requireAnyAdminAccess } from "@/lib/services/adminGuard";
 
 const PAGE_SIZE = 25;
 
@@ -12,6 +14,14 @@ export default async function StudentsAdminPage({
 }: {
   searchParams: { q?: string; page?: string };
 }) {
+  // Cette page liste les élèves de TOUTES les écoles : réservée au
+  // super_admin. Un school_admin dispose de sa propre page dédiée
+  // (/admin/schools/[id]/members), scopée à sa seule école par la RLS.
+  const access = await requireAnyAdminAccess();
+  if (access.role === "school_admin") {
+    redirect(`/admin/schools/${access.schoolId}/members`);
+  }
+
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const { students, totalCount } = await getStudents(searchParams.q, page, PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));

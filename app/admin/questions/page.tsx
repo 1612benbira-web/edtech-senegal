@@ -149,7 +149,7 @@ export default async function QuestionsAdminPage({
               />
             ))}
             {exercises.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucun exercice pour l'instant.</p>
+              <p className="text-sm text-muted-foreground">Aucun exercice pour l&apos;instant.</p>
             )}
           </div>
         </AdminSection>
@@ -228,7 +228,7 @@ export default async function QuestionsAdminPage({
               />
             ))}
             {questions.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucune question pour l'instant.</p>
+              <p className="text-sm text-muted-foreground">Aucune question pour l&apos;instant.</p>
             )}
           </div>
         </AdminSection>

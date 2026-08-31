@@ -1,5 +1,7 @@
-import { Layers, GitBranch, BookMarked, FileText, Users, ClipboardList } from "lucide-react";
+import { redirect } from "next/navigation";
+import { Layers, GitBranch, BookMarked, FileText, Users, ClipboardList, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { requireAnyAdminAccess } from "@/lib/services/adminGuard";
 
 async function count(table: string) {
   const supabase = await createClient();
@@ -8,16 +10,25 @@ async function count(table: string) {
 }
 
 export default async function AdminDashboardPage() {
-  const [cycles, levels, series, subjects, curriculums, students] = await Promise.all([
+  // Un school_admin n'a pas de vue globale : sa page d'accueil est
+  // directement le tableau de bord de sa propre école.
+  const access = await requireAnyAdminAccess();
+  if (access.role === "school_admin") {
+    redirect(`/admin/schools/${access.schoolId}`);
+  }
+
+  const [cycles, levels, series, subjects, curriculums, students, schools] = await Promise.all([
     count("school_cycles"),
     count("school_levels"),
     count("school_series"),
     count("subjects"),
     count("curriculums"),
     count("profiles"),
+    count("schools"),
   ]);
 
   const stats = [
+    { label: "Établissements", value: schools, icon: Building2 },
     { label: "Cycles", value: cycles, icon: Layers },
     { label: "Niveaux", value: levels, icon: GitBranch },
     { label: "Séries", value: series, icon: ClipboardList },
@@ -28,7 +39,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-bold text-foreground">Vue d'ensemble</h1>
+      <h1 className="mb-1 text-xl font-bold text-foreground">Vue d&apos;ensemble</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Aperçu global du contenu et des élèves de la plateforme.
       </p>

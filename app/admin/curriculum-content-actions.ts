@@ -119,11 +119,42 @@ export async function updateCurriculumStatusAction(
   }
 }
 
-export async function deleteCurriculumAction(curriculumId: string) {
-  const { supabase } = await requireAdmin();
-  const { error } = await supabase.from("curriculums").delete().eq("id", curriculumId);
-  if (error) throw error;
-  revalidatePath("/admin/curriculums");
+export async function deleteCurriculumAction(curriculumId: string): Promise<ActionState> {
+  try {
+    const { supabase } = await requireAdmin();
+
+    // Un programme peut avoir des chapitres et des domaines rattachés.
+    // Les chapitres sont comptés y compris ceux déjà "soft-deleted"
+    // (deleted_at renseigné) : la ligne existe toujours en base et la
+    // contrainte de clé étrangère bloquerait de toute façon la suppression
+    // du programme tant qu'elle existe. On préfère l'expliquer clairement
+    // plutôt que de forcer un ON DELETE CASCADE qui effacerait
+    // silencieusement des chapitres/leçons/exercices/questions.
+    const [{ count: chaptersCount, error: chErr }, { count: domainsCount, error: domErr }] = await Promise.all([
+      supabase.from("chapters").select("id", { count: "exact", head: true }).eq("curriculum_id", curriculumId),
+      supabase.from("domains").select("id", { count: "exact", head: true }).eq("curriculum_id", curriculumId),
+    ]);
+    if (chErr) return { error: chErr.message };
+    if (domErr) return { error: domErr.message };
+
+    const blockers: string[] = [];
+    if ((chaptersCount ?? 0) > 0) blockers.push(`${chaptersCount} chapitre(s)`);
+    if ((domainsCount ?? 0) > 0) blockers.push(`${domainsCount} domaine(s)`);
+
+    if (blockers.length > 0) {
+      return {
+        error: `Impossible de supprimer ce programme : ${blockers.join(", ")} y sont encore rattaché(s) (y compris les chapitres archivés). Supprime d'abord ces éléments.`,
+      };
+    }
+
+    const { error } = await supabase.from("curriculums").delete().eq("id", curriculumId);
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin/curriculums");
+    return { success: true };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
 }
 
 // ============================================================

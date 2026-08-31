@@ -18,14 +18,22 @@ import {
   LogOut,
   Menu,
   X,
+  Building2,
+  GraduationCap,
+  BookOpen,
+  Dumbbell,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { logoutAction } from "@/app/(auth)/actions";
 
-const NAV_SECTIONS = [
+const SUPER_ADMIN_SECTIONS = [
   {
     label: "Vue d'ensemble",
     items: [{ href: "/admin", label: "Tableau de bord", icon: LayoutDashboard }],
+  },
+  {
+    label: "Établissements",
+    items: [{ href: "/admin/schools", label: "Écoles", icon: Building2 }],
   },
   {
     label: "Contenu pédagogique",
@@ -53,12 +61,40 @@ const NAV_SECTIONS = [
   },
 ];
 
-function NavContent({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
+function schoolAdminSections(schoolId: string) {
+  return [
+    {
+      label: "Mon établissement",
+      items: [
+        { href: `/admin/schools/${schoolId}`, label: "Vue générale", icon: LayoutDashboard },
+        { href: `/admin/schools/${schoolId}/members`, label: "Élèves & enseignants", icon: GraduationCap },
+        { href: `/admin/schools/${schoolId}/curriculums`, label: "Programmes nationaux", icon: ClipboardList },
+      ],
+    },
+    {
+      label: "Mon contenu",
+      items: [
+        { href: `/admin/schools/${schoolId}/content`, label: "Programme propre à l'école", icon: BookOpen },
+        { href: `/admin/schools/${schoolId}/content/private-exercise`, label: "Exercices privés", icon: Dumbbell },
+      ],
+    },
+  ];
+}
+
+function NavContent({
+  sections,
+  pathname,
+  onNavigate,
+}: {
+  sections: typeof SUPER_ADMIN_SECTIONS;
+  pathname: string | null;
+  onNavigate?: () => void;
+}) {
   return (
     <>
       <p className="mb-4 px-2 font-display text-sm font-semibold text-foreground">Administration</p>
       <nav className="space-y-4">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label}>
             <p className="px-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
               {section.label}
@@ -93,7 +129,7 @@ function NavContent({ pathname, onNavigate }: { pathname: string | null; onNavig
         className="mt-6 flex items-center gap-1.5 px-2 text-xs text-muted-foreground hover:underline"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-        Retour à l'application
+        Retour à l&apos;application
       </Link>
       <form action={logoutAction} className="mt-1">
         <button
@@ -108,9 +144,18 @@ function NavContent({ pathname, onNavigate }: { pathname: string | null; onNavig
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({
+  role = "admin",
+  schoolId,
+}: {
+  role?: "admin" | "school_admin";
+  schoolId?: string;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  const sections =
+    role === "school_admin" && schoolId ? schoolAdminSections(schoolId) : SUPER_ADMIN_SECTIONS;
 
   return (
     <>
@@ -128,11 +173,11 @@ export function AdminSidebar() {
       </div>
       {open && (
         <div className="border-b border-border bg-muted/40 p-4 md:hidden">
-          <NavContent pathname={pathname} onNavigate={() => setOpen(false)} />
+          <NavContent sections={sections} pathname={pathname} onNavigate={() => setOpen(false)} />
         </div>
       )}
       <aside className="hidden w-60 shrink-0 border-r border-border bg-muted/40 p-4 md:block">
-        <NavContent pathname={pathname} />
+        <NavContent sections={sections} pathname={pathname} />
       </aside>
     </>
   );

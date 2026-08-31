@@ -33,7 +33,7 @@ export default async function ProgrammePage() {
       {programmes.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            Tu n'as pas encore choisi de matière.{" "}
+            Tu n&apos;as pas encore choisi de matière.{" "}
             <Link href="/dashboard" className="text-primary hover:underline">
               Ajoute un programme depuis ton tableau de bord
             </Link>

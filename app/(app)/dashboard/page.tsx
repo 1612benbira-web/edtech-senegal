@@ -7,6 +7,7 @@ import { startReviewQuizAction, startDailyQuizAction } from "@/app/(app)/quiz/ac
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 import { getStreak, getEarnedBadges } from "@/lib/queries/gamification";
 import { getMyProgramme } from "@/lib/queries/programme";
+import { getCurrentSchool } from "@/lib/services/schoolService";
 import { ProgramCard } from "@/components/curriculum/program-card";
 import { AddProgramModal } from "@/components/curriculum/add-program-modal";
 import { Badge } from "@/components/ui/badge";
@@ -64,13 +65,14 @@ export default async function DashboardPage() {
   // défaut, même logique que le quiz du jour — voir gamificationService.ts).
   const greeting = getTimeBasedGreeting(profile.timezone ?? "Africa/Dakar");
 
-  const [{ data: availableLevelSubjects }, programmes, streak, earnedBadges, leaderboard, myRank] = await Promise.all([
+  const [{ data: availableLevelSubjects }, programmes, streak, earnedBadges, leaderboard, myRank, currentSchool] = await Promise.all([
     supabase.from("level_subjects").select("subject_id, series_id, is_optional, subjects(id, name, icon)").eq("level_id", profile.level_id),
     getMyProgramme(user.id, profile.level_id),
     getStreak(user.id),
     getEarnedBadges(user.id),
     getLevelLeaderboard(profile.level_id),
     getMyLevelRank(profile.level_id),
+    getCurrentSchool(),
   ]);
 
   const enrolledSubjectIds = new Set(programmes.map((p) => p.subjectId));
@@ -91,8 +93,13 @@ export default async function DashboardPage() {
           <div className="max-w-xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100"><Sparkles className="h-3 w-3" /> Espace élève</span>
             <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">{greeting}, {profile.first_name ?? ""} ! 👋</h1>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-emerald-50/70">Continue ton apprentissage là où tu t'es arrêté et garde ton rythme.</p>
-            {nextLesson && <Link href={`/lesson/${nextLesson}`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#064c35] transition hover:bg-emerald-50 dark:bg-white dark:text-[#064c35]"><span>Continuer l'apprentissage</span><ArrowRight className="h-4 w-4" /></Link>}
+            {currentSchool && (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-emerald-200/80">
+                🏫 {currentSchool.schoolName}
+              </p>
+            )}
+            <p className="mt-2 max-w-lg text-sm leading-6 text-emerald-50/70">Continue ton apprentissage là où tu t&apos;es arrêté et garde ton rythme.</p>
+            {nextLesson && <Link href={`/lesson/${nextLesson}`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#064c35] transition hover:bg-emerald-50 dark:bg-white dark:text-[#064c35]"><span>Continuer l&apos;apprentissage</span><ArrowRight className="h-4 w-4" /></Link>}
           </div>
           <div className="flex min-w-[270px] items-center gap-5 rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[5px] border-amber-300/90 bg-[#063f2d] shadow-[0_0_35px_-12px_rgba(245,197,66,.9)]"><span className="text-center"><span className="block text-[9px] font-bold uppercase tracking-widest text-amber-200">Niveau</span><span className="block font-display text-3xl font-bold">{levelNumber}</span></span></div>
@@ -118,12 +125,12 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(310px,.75fr)]">
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_-28px_rgba(15,23,42,.4)] sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><BookOpen className="h-5 w-5 text-emerald-600" />Mes programmes</h2><p className="mt-1 text-sm text-slate-500">Retrouve tes matières et reprends là où tu t'es arrêté.</p></div><div className="flex items-center gap-2"><AddProgramModal availableSubjects={availableSubjects as any} /><Link href="/programme" className="hidden rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:inline-flex">Voir tout</Link></div></div>
-          {programmes.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-500">Tu n'as pas encore de matière dans ton programme.</div> : <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">{programmes.map((program) => <ProgramCard key={program.subjectId} program={program} />)}</div>}
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><BookOpen className="h-5 w-5 text-emerald-600" />Mes programmes</h2><p className="mt-1 text-sm text-slate-500">Retrouve tes matières et reprends là où tu t&apos;es arrêté.</p></div><div className="flex items-center gap-2"><AddProgramModal availableSubjects={availableSubjects as any} /><Link href="/programme" className="hidden rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:inline-flex">Voir tout</Link></div></div>
+          {programmes.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-500">Tu n&apos;as pas encore de matière dans ton programme.</div> : <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">{programmes.map((program) => <ProgramCard key={program.subjectId} program={program} />)}</div>}
         </section>
 
         <div className="space-y-4">
-          <section className="rounded-[26px] border border-emerald-200 bg-emerald-50/60 p-5 sm:p-6"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm"><Target className="h-5 w-5" /></span><div><h2 className="font-display text-lg font-bold text-slate-950">Quiz du jour</h2><p className="mt-1 text-xs leading-5 text-slate-500">Un quiz personnalisé t'attend, basé sur ce que tu as appris.</p></div></div><StartQuizButton action={startDailyQuizAction} arg="" label="Faire le quiz du jour  →" /></section>
+          <section className="rounded-[26px] border border-emerald-200 bg-emerald-50/60 p-5 sm:p-6"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm"><Target className="h-5 w-5" /></span><div><h2 className="font-display text-lg font-bold text-slate-950">Quiz du jour</h2><p className="mt-1 text-xs leading-5 text-slate-500">Un quiz personnalisé t&apos;attend, basé sur ce que tu as appris.</p></div></div><StartQuizButton action={startDailyQuizAction} arg="" label="Faire le quiz du jour  →" /></section>
           <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-500"><BookOpen className="h-5 w-5" /></span><div><h2 className="font-display text-lg font-bold text-slate-950">Quiz de révision</h2><p className="mt-1 text-xs leading-5 text-slate-500">Reviens sur les notions à consolider.</p></div></div><StartQuizButton action={startReviewQuizAction} arg="" label="Faire un quiz de révision  →" variant="secondary" /></section>
         </div>
       </div>
@@ -142,7 +149,7 @@ export default async function DashboardPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(310px,.75fr)]">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Trophy className="h-5 w-5 text-amber-500" />Top 10 des élèves</h2><p className="mt-1 text-sm text-slate-500">Classement XP des élèves de ton niveau.</p></div>{myRank && myRank > 10 && <Badge variant="primary">Ton classement : #{myRank}</Badge>}</div><div className="mt-5 space-y-2">{leaderboard.length === 0 ? <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Le classement sera disponible dès que des élèves auront gagné de l'XP.</div> : leaderboard.map((entry) => { const isMe = entry.profileId === user!.id; return <div key={entry.profileId} className={`flex items-center gap-3 rounded-2xl px-3 py-3.5 ${isMe ? "bg-emerald-50 ring-1 ring-emerald-100" : "bg-slate-50/70"}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-600 shadow-sm">{entry.rank <= 3 ? rankMedals[entry.rank - 1] : entry.rank}</span><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#064c35] text-[10px] font-bold text-white">{entry.firstName?.[0] ?? "E"}</span><span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{entry.firstName}{entry.lastNameInitial ? ` ${entry.lastNameInitial}` : ""}{isMe ? " · Toi" : ""}</span><span className="font-mono text-xs font-bold text-slate-900">{entry.xpTotal} XP</span><ChevronRight className="h-4 w-4 text-slate-300" /></div> })}</div></section>
+        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Trophy className="h-5 w-5 text-amber-500" />Top 10 des élèves</h2><p className="mt-1 text-sm text-slate-500">Classement XP des élèves de ton niveau.</p></div>{myRank && myRank > 10 && <Badge variant="primary">Ton classement : #{myRank}</Badge>}</div><div className="mt-5 space-y-2">{leaderboard.length === 0 ? <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Le classement sera disponible dès que des élèves auront gagné de l&apos;XP.</div> : leaderboard.map((entry) => { const isMe = entry.profileId === user!.id; return <div key={entry.profileId} className={`flex items-center gap-3 rounded-2xl px-3 py-3.5 ${isMe ? "bg-emerald-50 ring-1 ring-emerald-100" : "bg-slate-50/70"}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-600 shadow-sm">{entry.rank <= 3 ? rankMedals[entry.rank - 1] : entry.rank}</span><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#064c35] text-[10px] font-bold text-white">{entry.firstName?.[0] ?? "E"}</span><span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{entry.firstName}{entry.lastNameInitial ? ` ${entry.lastNameInitial}` : ""}{isMe ? " · Toi" : ""}</span><span className="font-mono text-xs font-bold text-slate-900">{entry.xpTotal} XP</span><ChevronRight className="h-4 w-4 text-slate-300" /></div> })}</div></section>
 
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Medal className="h-5 w-5 text-emerald-600" />Mes badges</h2><p className="mt-1 text-sm text-slate-500">Tes récompenses pour tes progrès.</p></div>{earnedBadges.length > 0 ? <div className="mt-5 grid grid-cols-2 gap-3">{earnedBadges.slice(0, 6).map((b: any) => <div key={b.badges.code} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3" title={b.badges.description ?? undefined}><div className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-500"><Award className="h-5 w-5" /></div><p className="mt-2 truncate text-xs font-bold text-slate-900">{b.badges.name}</p><p className="mt-1 line-clamp-1 text-[10px] text-slate-500">{b.badges.description}</p></div>)}</div> : <div className="mt-5 rounded-2xl bg-slate-50 p-8 text-center"><Zap className="mx-auto h-6 w-6 text-amber-500" /><p className="mt-2 text-sm font-semibold text-slate-800">Tes premiers badges arrivent bientôt.</p><p className="mt-1 text-xs text-slate-500">Continue à apprendre pour débloquer des récompenses.</p></div>}</section>
       </div>

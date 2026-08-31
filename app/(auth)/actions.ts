@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { loginSchema, registerSchema } from "@/lib/validations/schemas";
+import { getSchoolByCode } from "@/lib/services/schoolService";
 
 export type AuthActionState = { error?: string; success?: string; next?: "phone"; phone?: string; fieldErrors?: Record<string, string> } | null;
 
@@ -16,12 +17,26 @@ function normalizePhone(value: string) {
 }
 
 export async function registerAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
-  const parsed = registerSchema.safeParse({ email: formData.get("email"), password: formData.get("password"), firstName: formData.get("firstName"), lastName: formData.get("lastName"), phone: formData.get("phone") || "" });
+  const parsed = registerSchema.safeParse({ email: formData.get("email"), password: formData.get("password"), firstName: formData.get("firstName"), lastName: formData.get("lastName"), phone: formData.get("phone") || "", schoolCode: formData.get("schoolCode") || "" });
   if (!parsed.success) { const fieldErrors: Record<string,string> = {}; for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] = issue.message; return { fieldErrors }; }
   const { email, password, firstName, lastName } = parsed.data;
   const rawPhone = String(parsed.data.phone || "").trim();
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
   if (rawPhone && !phone) return { fieldErrors: { phone: "Numéro invalide. Exemple : +221 77 123 45 67." } };
+
+  // Le code établissement est optionnel : un compte peut être créé sans
+  // école (compatibilité — voir CORRECTIONS multi-écoles) et rattaché
+  // plus tard. S'il est fourni, on le valide AVANT de créer le compte
+  // pour ne jamais laisser un utilisateur "orphelin" d'une erreur de saisie.
+  const rawSchoolCode = String(parsed.data.schoolCode || "").trim();
+  let school: { id: string; name: string; code: string; status: string } | null = null;
+  if (rawSchoolCode) {
+    school = await getSchoolByCode(rawSchoolCode);
+    if (!school || school.status !== "active") {
+      return { fieldErrors: { schoolCode: "Code établissement introuvable ou inactif. Vérifie-le auprès de ton école, ou laisse ce champ vide." } };
+    }
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name: firstName, last_name: lastName } } });
   if (error) return { error: translateAuthError(error.message) };
@@ -31,6 +46,26 @@ export async function registerAction(_prev: AuthActionState, formData: FormData)
       const admin = createServiceRoleClient();
       const { error: phoneError } = await admin.auth.admin.updateUserById(data.user.id, { phone });
       if (phoneError) return { error: "Le compte a été créé, mais le numéro de téléphone n'a pas pu être associé. Tu peux récupérer le compte par email." };
+    }
+
+    if (school) {
+      // Rattachement à l'école : passe par service_role car un élève qui
+      // vient de s'inscrire n'est pas encore membre de l'école (la RLS
+      // school_members n'autorise l'insertion qu'aux admins/school_admins
+      // — voir migration 0018). Le code a déjà été validé ci-dessus.
+      try {
+        const admin = createServiceRoleClient();
+        const { error: memberError } = await admin.from("school_members").upsert(
+          { school_id: school.id, profile_id: data.user.id, role: "student", status: "active" },
+          { onConflict: "school_id,profile_id" }
+        );
+        if (memberError) {
+          console.error("Impossible de rattacher l'élève à l'école:", memberError.message);
+          return { error: "Le compte a été créé, mais le rattachement à l'école a échoué. Contacte ton administrateur d'école." };
+        }
+      } catch (schoolLinkError) {
+        console.error("Service role indisponible pour le rattachement école:", schoolLinkError);
+      }
     }
   }
   redirect("/dashboard");

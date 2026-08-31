@@ -30,8 +30,8 @@ export default async function CurriculumsAdminPage() {
         description={
           <>
             Un programme ne peut être publié sans <code>source_url</code> ou{" "}
-            <code>source_document</code> — c'est bloqué en base, pas seulement côté
-            interface. Tant qu'il n'est pas au statut "Publié", aucun élève ne peut
+            <code>source_document</code> — c&apos;est bloqué en base, pas seulement côté
+            interface. Tant qu&apos;il n&apos;est pas au statut &quot;Publié&quot;, aucun élève ne peut
             le voir.
           </>
         }
@@ -112,7 +112,7 @@ export default async function CurriculumsAdminPage() {
             </div>
           ))}
           {curriculums.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucun programme pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucun programme pour l&apos;instant.</p>
           )}
         </div>
       </AdminSection>

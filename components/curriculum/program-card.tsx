@@ -286,7 +286,7 @@ export function ProgramCard({
               />
 
               <span className="text-[11px] text-slate-500">
-                Reprends là où tu t'es arrêté.
+                Reprends là où tu t&apos;es arrêté.
               </span>
             </div>
           )}

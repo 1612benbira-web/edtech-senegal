@@ -79,7 +79,7 @@ export default async function ProgressPage() {
             </div>
           ))}
           {subjectsProgress.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucune matière choisie pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucune matière choisie pour l&apos;instant.</p>
           )}
         </div>
       </div>

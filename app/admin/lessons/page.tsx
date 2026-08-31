@@ -129,7 +129,7 @@ export default async function LessonsAdminPage({
                 />
               ))}
               {lessons.length === 0 && (
-                <p className="text-sm text-muted-foreground">Aucune leçon pour l'instant.</p>
+                <p className="text-sm text-muted-foreground">Aucune leçon pour l&apos;instant.</p>
               )}
             </div>
           </AdminSection>

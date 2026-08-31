@@ -66,7 +66,7 @@ export default async function SubjectProgrammePage({
         ))}
         {chapters.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Aucun chapitre publié pour l'instant dans cette matière.
+            Aucun chapitre publié pour l&apos;instant dans cette matière.
           </p>
         )}
       </div>

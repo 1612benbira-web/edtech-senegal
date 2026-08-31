@@ -24,7 +24,7 @@ export default function AppError({
         Une erreur est survenue
       </h1>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Quelque chose s'est mal passé de notre côté. Réessaie, et si le problème persiste,
+        Quelque chose s&apos;est mal passé de notre côté. Réessaie, et si le problème persiste,
         reviens un peu plus tard.
       </p>
       <div className="mt-4">

@@ -61,7 +61,7 @@ export default async function QuizHubPage() {
       <h2 className="mb-3 mt-8 font-display text-lg font-semibold text-foreground">Par matière</h2>
       {subjectsWithContent.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Aucune matière avec du contenu publié pour l'instant.
+          Aucune matière avec du contenu publié pour l&apos;instant.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

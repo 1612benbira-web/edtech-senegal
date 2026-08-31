@@ -37,7 +37,7 @@ export default async function ContinuePage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Continuer mes cours</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Reprends chaque matière exactement là où ta progression réelle s'est arrêtée.
+              Reprends chaque matière exactement là où ta progression réelle s&apos;est arrêtée.
             </p>
           </div>
         </div>

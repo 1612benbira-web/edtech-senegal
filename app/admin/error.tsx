@@ -21,10 +21,10 @@ export default function AdminError({
         <AlertTriangle className="h-6 w-6" aria-hidden="true" />
       </span>
       <h1 className="font-display text-lg font-semibold text-foreground">
-        Erreur d'administration
+        Erreur d&apos;administration
       </h1>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        L'opération a échoué. Vérifie tes droits d'accès et réessaie.
+        L&apos;opération a échoué. Vérifie tes droits d&apos;accès et réessaie.
       </p>
       <div className="mt-4">
         <Button onClick={reset}>Réessayer</Button>
