@@ -42,6 +42,15 @@ export default async function SchoolsAdminPage() {
             placeholder: "ecole-moderne-dakar",
             helpText: "Laisser vide pour le générer automatiquement à partir du nom.",
           },
+          {
+            name: "adminEmail",
+            label: "Email du School Admin",
+            optional: true,
+            type: "email",
+            placeholder: "admin@ecole.com",
+            helpText:
+              "Optionnel. Si un compte existe déjà avec cet email, il devient immédiatement administrateur de cette école. Sinon, une invitation lui est envoyée.",
+          },
         ]}
       />
 

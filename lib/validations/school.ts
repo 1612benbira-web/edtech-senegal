@@ -24,6 +24,18 @@ export const schoolSchema = z.object({
     .min(3, "Code requis (3 caractères minimum)")
     .regex(/^[A-Za-z0-9-]+$/, "Lettres, chiffres et tirets uniquement")
     .transform((value) => value.toUpperCase()),
+  // Optionnel : si renseigné, cette personne est désignée school_admin de
+  // la nouvelle école (utilisateur existant rattaché immédiatement, ou
+  // invitation envoyée si le compte n'existe pas encore — cf.
+  // createSchoolAction). Validation stricte côté serveur : ne JAMAIS se
+  // fier uniquement à la validation HTML côté client.
+  adminEmail: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined)
+    .refine((value) => !value || z.string().email().safeParse(value).success, {
+      message: "Adresse email invalide.",
+    }),
 });
 
 export const schoolStatusSchema = z.object({

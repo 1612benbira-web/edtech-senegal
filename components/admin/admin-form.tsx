@@ -9,7 +9,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 interface Field {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "checkbox" | "hidden" | "textarea";
+  type?: "text" | "email" | "number" | "select" | "checkbox" | "hidden" | "textarea";
   options?: { value: string; label: string }[];
   placeholder?: string;
   optional?: boolean;
@@ -38,7 +38,7 @@ export function AdminForm({
       )}
       {state?.success && (
         <div role="status" className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-          Ajouté avec succès.
+          {state.message || "Ajouté avec succès."}
         </div>
       )}
 

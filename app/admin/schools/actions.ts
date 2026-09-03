@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireSchoolAccess } from "@/lib/services/adminGuard";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   schoolSchema,
   schoolStatusSchema,
@@ -13,6 +14,7 @@ export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
   success?: boolean;
+  message?: string;
 } | null;
 
 function parseOrThrow<T>(schema: { safeParse: (v: unknown) => any }, raw: T) {
@@ -41,27 +43,97 @@ export async function createSchoolAction(
       name: formData.get("name"),
       slug: formData.get("slug"),
       code: formData.get("code"),
+      adminEmail: formData.get("adminEmail"),
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
     const { slugify } = await import("@/lib/validations/school");
     const slug = parsed.data!.slug ?? slugify(parsed.data!.name);
+    const adminEmail = parsed.data!.adminEmail;
 
-    const { error } = await supabase.from("schools").insert({
-      name: parsed.data!.name,
-      slug,
-      code: parsed.data!.code,
+    // ------------------------------------------------------------
+    // Étape 1 — résoudre (ou créer) le compte du futur school_admin,
+    // AVANT de créer l'école : si cette étape échoue, aucune école
+    // n'est créée (jamais d'établissement orphelin sans administrateur
+    // à cause d'un email invalide/service indisponible).
+    // ------------------------------------------------------------
+    let adminProfileId: string | null = null;
+    let adminMode: "existing" | "invited" | null = null;
+
+    if (adminEmail) {
+      // Recherche d'un profil existant. `profiles_admin_all` (0009)
+      // autorise le super_admin à lire n'importe quel profil — pas
+      // besoin de service_role ici.
+      const { data: existingProfile, error: lookupError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", adminEmail)
+        .maybeSingle();
+      if (lookupError) return { error: lookupError.message };
+
+      if (existingProfile) {
+        adminProfileId = existingProfile.id;
+        adminMode = "existing";
+      } else {
+        // CAS 2 — l'utilisateur n'existe pas encore : on l'invite via
+        // Supabase Auth Admin API (service_role, jamais côté client).
+        // Le trigger on_auth_user_created (0003) crée automatiquement
+        // sa ligne `profiles` dans la foulée.
+        let admin;
+        try {
+          admin = createServiceRoleClient();
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+
+        const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(adminEmail);
+        if (inviteError || !invited?.user) {
+          return {
+            error: `L'invitation à ${adminEmail} a échoué : ${inviteError?.message ?? "erreur inconnue"}. L'école n'a pas été créée.`,
+          };
+        }
+        adminProfileId = invited.user.id;
+        adminMode = "invited";
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Étape 2 — création atomique de l'école + rattachement school_admin
+    // (fonction RPC transactionnelle, migration 0020) : si l'insertion
+    // du membership échoue, l'école créée est annulée avec elle.
+    // ------------------------------------------------------------
+    const { data: rpcResult, error: rpcError } = await supabase.rpc("create_school_with_admin", {
+      p_name: parsed.data!.name,
+      p_slug: slug,
+      p_code: parsed.data!.code,
+      p_admin_profile_id: adminProfileId,
     });
 
-    if (error) {
-      if (error.code === "23505") {
+    if (rpcError) {
+      if (rpcError.code === "23505") {
         return { error: "Ce slug ou ce code établissement est déjà utilisé." };
       }
-      return { error: error.message };
+      return { error: rpcError.message };
+    }
+
+    const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+    if (!result?.school_id) {
+      return { error: "La création de l'école a échoué pour une raison inconnue." };
     }
 
     revalidatePath("/admin/schools");
-    return { success: true };
+
+    let message = "École créée avec succès.";
+    if (adminMode === "existing") {
+      message += ` ${adminEmail} a été désigné comme School Admin.`;
+      if (result.already_admin_elsewhere) {
+        message += " Il administre déjà au moins une autre école — il administre maintenant aussi celle-ci.";
+      }
+    } else if (adminMode === "invited") {
+      message += ` Une invitation a été envoyée à ${adminEmail}.`;
+    }
+
+    return { success: true, message };
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -80,11 +152,16 @@ export async function updateSchoolStatusAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("schools")
       .update({ status: parsed.data!.status })
-      .eq("id", parsed.data!.schoolId);
+      .eq("id", parsed.data!.schoolId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Cette école n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath("/admin/schools");
     revalidatePath(`/admin/schools/${parsed.data!.schoolId}`);
@@ -105,8 +182,16 @@ export async function updateSchoolNameAction(
     if (name.length < 2) return { fieldErrors: { name: "Nom requis (2 caractères minimum)" } };
 
     const { supabase } = await requireSchoolAccess(schoolId);
-    const { error } = await supabase.from("schools").update({ name }).eq("id", schoolId);
+    const { data: updated, error } = await supabase
+      .from("schools")
+      .update({ name })
+      .eq("id", schoolId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Cette école n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(`/admin/schools/${schoolId}`);
     return { success: true };
@@ -137,10 +222,15 @@ export async function toggleSchoolCurriculumAction(
     // Ce bouton ne duplique jamais le contenu : il crée/actualise
     // uniquement la relation school_curriculums (le curriculum reste
     // un contenu global partagé — cf. règle architecturale du projet).
-    const { error } = await supabase
+    const { data: upserted, error } = await supabase
       .from("school_curriculums")
-      .upsert({ school_id: schoolId, curriculum_id: curriculumId, enabled }, { onConflict: "school_id,curriculum_id" });
+      .upsert({ school_id: schoolId, curriculum_id: curriculumId, enabled }, { onConflict: "school_id,curriculum_id" })
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!upserted) {
+      return { error: "Ce programme n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(`/admin/schools/${schoolId}/curriculums`);
     return { success: true };
@@ -182,12 +272,17 @@ export async function updateSchoolMemberStatusAction(
       return { error: "Tu ne peux pas modifier ton propre statut d'administrateur — demande à un autre administrateur ou au super administrateur." };
     }
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("school_members")
       .update({ status: parsed.data!.status })
       .eq("id", parsed.data!.schoolMemberId)
-      .eq("school_id", schoolId);
+      .eq("school_id", schoolId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Ce membre n'existe pas ou vous n'avez pas les droits nécessaires (par exemple : impossible de modifier un autre administrateur d'école)." };
+    }
 
     revalidatePath(`/admin/schools/${schoolId}/members`);
     return { success: true };
@@ -210,11 +305,16 @@ export async function removeSchoolMemberAction(schoolMemberId: string, schoolId:
     throw new Error("Tu ne peux pas te retirer toi-même de l'école — demande à un autre administrateur ou au super administrateur.");
   }
 
-  const { error } = await supabase
+  const { data: deleted, error } = await supabase
     .from("school_members")
     .delete()
     .eq("id", schoolMemberId)
-    .eq("school_id", schoolId);
+    .eq("school_id", schoolId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!deleted) {
+    throw new Error("Ce membre n'existe pas ou vous n'avez pas les droits nécessaires (par exemple : impossible de retirer un autre administrateur d'école).");
+  }
   revalidatePath(`/admin/schools/${schoolId}/members`);
 }

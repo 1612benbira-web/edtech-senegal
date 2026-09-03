@@ -73,6 +73,12 @@ export default async function SchoolDetailPage({ params }: { params: { id: strin
         >
           Exercices privés
         </Link>
+        <Link
+          href={`/admin/schools/${school.id}/messages`}
+          className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+        >
+          Messages
+        </Link>
         {isSuperAdmin && (
           <Link href="/admin/schools" className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">
             ← Toutes les écoles

@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types/database";
 import { getTodayInTimezone } from "@/lib/utils/timezone";
 import { selectDailyQuizQuestions, type CandidatePools, type DailyQuizConfig } from "@/lib/algorithms/dailyQuiz";
+
+type AnySupabaseClient = SupabaseClient<Database> | Awaited<ReturnType<typeof createClient>>;
 
 const RECENT_LESSON_DAYS = 14;
 
 async function resolveCandidatePools(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: AnySupabaseClient,
   profileId: string,
   levelId: string
 ): Promise<CandidatePools> {
@@ -131,9 +135,18 @@ async function resolveCandidatePools(
 /**
  * Retourne le quiz du jour de l'élève, en le créant s'il n'existe pas
  * encore pour la date du jour (dans son fuseau horaire).
+ *
+ * `client` est injectable pour permettre l'appel depuis un contexte
+ * sans session utilisateur (ex : job planifié de notifications, cf.
+ * app/api/cron/daily-quiz-notifications) avec un client service_role.
+ * Par défaut, utilise le client lié à la session (comportement
+ * historique, inchangé pour tous les appels existants).
  */
-export async function getOrCreateDailyQuiz(profileId: string): Promise<string> {
-  const supabase = await createClient();
+export async function getOrCreateDailyQuiz(
+  profileId: string,
+  client?: AnySupabaseClient
+): Promise<string> {
+  const supabase = client ?? (await createClient());
 
   const { data: profile } = await supabase
     .from("profiles")

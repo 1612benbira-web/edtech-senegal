@@ -101,19 +101,27 @@ export async function requireAnyAdminAccess() {
     return { supabase, userId: user.id, role: "admin" as const };
   }
 
-  if (profile?.role === "school_admin") {
-    const { data: membership } = await supabase
-      .from("school_members")
-      .select("school_id")
-      .eq("profile_id", user.id)
-      .eq("role", "school_admin")
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle();
+  // BUG CORRIGÉ : l'ancienne version exigeait profiles.role === "school_admin"
+  // AVANT même de regarder school_members, ce qui empêchait un utilisateur
+  // d'accéder à /admin quand son appartenance à une école (school_members)
+  // portait déjà role = 'school_admin' mais que son profiles.role global
+  // était resté 'student' ou 'teacher' (cas normal : school_members est la
+  // source de vérité pour ce rattachement, cf. migration 0017/0018 —
+  // profiles.role = 'school_admin' n'est qu'une commodité, pas une condition
+  // requise). On interroge donc directement school_members, sans condition
+  // préalable sur profiles.role.
+  const { data: membership } = await supabase
+    .from("school_members")
+    .select("school_id")
+    .eq("profile_id", user.id)
+    .eq("role", "school_admin")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (membership) {
-      return { supabase, userId: user.id, role: "school_admin" as const, schoolId: membership.school_id as string };
-    }
+  if (membership) {
+    return { supabase, userId: user.id, role: "school_admin" as const, schoolId: membership.school_id as string };
   }
 
   throw new NotAdminError();

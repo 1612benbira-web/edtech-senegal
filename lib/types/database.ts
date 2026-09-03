@@ -457,6 +457,8 @@ export interface Database {
           type: string;
           title: string;
           body: string | null;
+          link: string | null;
+          metadata: Json;
           read_at: string | null;
           created_at: string;
           [key: string]: unknown;
@@ -464,6 +466,41 @@ export interface Database {
         Insert: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
         Relationships: [{ foreignKeyName: "notifications_profile_id_fkey"; columns: ["profile_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
+      };
+      messages: {
+        Row: {
+          id: string;
+          school_id: string;
+          sender_id: string | null;
+          title: string;
+          content: string;
+          target_type: "SCHOOL" | "LEVEL";
+          target_level_id: string | null;
+          created_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
+        Relationships: [
+          { foreignKeyName: "messages_school_id_fkey"; columns: ["school_id"]; isOneToOne: false; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "messages_sender_id_fkey"; columns: ["sender_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "messages_target_level_id_fkey"; columns: ["target_level_id"]; isOneToOne: false; referencedRelation: "school_levels"; referencedColumns: ["id"] }
+        ];
+      };
+      message_attachments: {
+        Row: {
+          id: string;
+          message_id: string;
+          file_name: string;
+          file_path: string;
+          mime_type: string;
+          file_size: number;
+          created_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["message_attachments"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["message_attachments"]["Row"]>;
+        Relationships: [{ foreignKeyName: "message_attachments_message_id_fkey"; columns: ["message_id"]; isOneToOne: false; referencedRelation: "messages"; referencedColumns: ["id"] }];
       };
     };
     Views: Record<string, never>;
@@ -478,6 +515,19 @@ export interface Database {
       };
       get_my_level_rank: {
         Args: { p_level_id: string };
+        Returns: number;
+      };
+      create_school_with_admin: {
+        Args: {
+          p_name: string;
+          p_slug: string;
+          p_code: string;
+          p_admin_profile_id?: string | null;
+        };
+        Returns: { school_id: string; already_admin_elsewhere: boolean }[];
+      };
+      fan_out_message_notifications: {
+        Args: { p_message_id: string };
         Returns: number;
       };
     };

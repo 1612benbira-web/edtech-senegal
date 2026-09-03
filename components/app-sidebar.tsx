@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw } from "lucide-react";
+import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { BrandLogo } from "@/components/brand-logo";
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/programme", label: "Mon programme", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Target },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/progress", label: "Ma progression", icon: TrendingUp },
 ];
 

@@ -22,6 +22,7 @@ import {
   GraduationCap,
   BookOpen,
   Dumbbell,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { logoutAction } from "@/app/(auth)/actions";
@@ -76,6 +77,12 @@ function schoolAdminSections(schoolId: string) {
       items: [
         { href: `/admin/schools/${schoolId}/content`, label: "Programme propre à l'école", icon: BookOpen },
         { href: `/admin/schools/${schoolId}/content/private-exercise`, label: "Exercices privés", icon: Dumbbell },
+      ],
+    },
+    {
+      label: "Communication",
+      items: [
+        { href: `/admin/schools/${schoolId}/messages`, label: "Messages", icon: MessageSquare },
       ],
     },
   ];

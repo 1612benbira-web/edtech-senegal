@@ -99,14 +99,21 @@ export async function updateSchoolCurriculumStatusAction(
 
     // La RLS (curriculums_school_admin_manage, migration 0019) empêche
     // de toute façon de toucher un curriculum qui n'appartient pas à
-    // cette école — cette requête échouera silencieusement (0 ligne
-    // affectée) si ce n'est pas le cas.
-    const { error } = await supabase
+    // cette école. On vérifie en plus explicitement qu'une ligne a bien
+    // été modifiée : un .update() qui ne touche 0 ligne (RLS ou id
+    // inexistant) ne renvoie PAS d'erreur PostgREST par défaut, donc on
+    // ne peut pas se contenter de tester `error`.
+    const { data: updated, error } = await supabase
       .from("curriculums")
       .update({ status: parsed.data!.status })
       .eq("id", parsed.data!.curriculumId)
-      .eq("school_id", schoolId);
+      .eq("school_id", schoolId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Ce programme n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(basePath(schoolId));
     return { success: true };
@@ -117,8 +124,17 @@ export async function updateSchoolCurriculumStatusAction(
 
 export async function deleteSchoolCurriculumAction(curriculumId: string, schoolId: string) {
   const { supabase } = await requireSchoolAccess(schoolId);
-  const { error } = await supabase.from("curriculums").delete().eq("id", curriculumId).eq("school_id", schoolId);
+  const { data: deleted, error } = await supabase
+    .from("curriculums")
+    .delete()
+    .eq("id", curriculumId)
+    .eq("school_id", schoolId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!deleted) {
+    throw new Error("Ce programme n'existe pas ou vous n'avez pas les droits nécessaires.");
+  }
   revalidatePath(basePath(schoolId));
 }
 
@@ -171,11 +187,16 @@ export async function updateSchoolChapterStatusAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("chapters")
       .update({ status: parsed.data!.status })
-      .eq("id", parsed.data!.chapterId);
+      .eq("id", parsed.data!.chapterId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Ce chapitre n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(basePath(schoolId));
     return { success: true };
@@ -186,8 +207,16 @@ export async function updateSchoolChapterStatusAction(
 
 export async function deleteSchoolChapterAction(chapterId: string, schoolId: string) {
   const { supabase } = await requireSchoolAccess(schoolId);
-  const { error } = await supabase.from("chapters").update({ deleted_at: new Date().toISOString() }).eq("id", chapterId);
+  const { data: updated, error } = await supabase
+    .from("chapters")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", chapterId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error("Ce chapitre n'existe pas ou vous n'avez pas les droits nécessaires.");
+  }
   revalidatePath(basePath(schoolId));
 }
 
@@ -246,11 +275,16 @@ export async function updateSchoolLessonStatusAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("lessons")
       .update({ status: parsed.data!.status })
-      .eq("id", parsed.data!.lessonId);
+      .eq("id", parsed.data!.lessonId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Cette leçon n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(basePath(schoolId));
     return { success: true };
@@ -261,8 +295,16 @@ export async function updateSchoolLessonStatusAction(
 
 export async function deleteSchoolLessonAction(lessonId: string, schoolId: string) {
   const { supabase } = await requireSchoolAccess(schoolId);
-  const { error } = await supabase.from("lessons").update({ deleted_at: new Date().toISOString() }).eq("id", lessonId);
+  const { data: updated, error } = await supabase
+    .from("lessons")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", lessonId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error("Cette leçon n'existe pas ou vous n'avez pas les droits nécessaires.");
+  }
   revalidatePath(basePath(schoolId));
 }
 
@@ -328,11 +370,16 @@ export async function updateSchoolExerciseStatusAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("exercises")
       .update({ status: parsed.data!.status })
-      .eq("id", parsed.data!.exerciseId);
+      .eq("id", parsed.data!.exerciseId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Cet exercice n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(basePath(schoolId));
     revalidatePath(`/admin/schools/${schoolId}/content/private-exercise`);
@@ -344,8 +391,16 @@ export async function updateSchoolExerciseStatusAction(
 
 export async function deleteSchoolExerciseAction(exerciseId: string, schoolId: string) {
   const { supabase } = await requireSchoolAccess(schoolId);
-  const { error } = await supabase.from("exercises").update({ deleted_at: new Date().toISOString() }).eq("id", exerciseId);
+  const { data: updated, error } = await supabase
+    .from("exercises")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", exerciseId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error("Cet exercice n'existe pas ou vous n'avez pas les droits nécessaires.");
+  }
   revalidatePath(basePath(schoolId));
   revalidatePath(`/admin/schools/${schoolId}/content/private-exercise`);
 }
@@ -433,11 +488,16 @@ export async function updateSchoolQuestionStatusAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("questions")
       .update({ status: parsed.data!.status })
-      .eq("id", parsed.data!.questionId);
+      .eq("id", parsed.data!.questionId)
+      .select("id")
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!updated) {
+      return { error: "Cette question n'existe pas ou vous n'avez pas les droits nécessaires." };
+    }
 
     revalidatePath(basePath(schoolId));
     revalidatePath(`/admin/schools/${schoolId}/content/private-exercise`);
@@ -449,8 +509,16 @@ export async function updateSchoolQuestionStatusAction(
 
 export async function deleteSchoolQuestionAction(questionId: string, schoolId: string) {
   const { supabase } = await requireSchoolAccess(schoolId);
-  const { error } = await supabase.from("questions").update({ deleted_at: new Date().toISOString() }).eq("id", questionId);
+  const { data: updated, error } = await supabase
+    .from("questions")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", questionId)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error("Cette question n'existe pas ou vous n'avez pas les droits nécessaires.");
+  }
   revalidatePath(basePath(schoolId));
   revalidatePath(`/admin/schools/${schoolId}/content/private-exercise`);
 }
