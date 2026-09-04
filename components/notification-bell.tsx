@@ -73,7 +73,7 @@ export function NotificationBell({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-[#064c35] sm:flex"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-[#064c35]"
       >
         <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
         {unreadCount > 0 && (
