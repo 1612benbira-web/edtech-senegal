@@ -98,10 +98,32 @@ export async function gradeQuizAction(
     .eq("profile_id", user.id)
     .maybeSingle();
   if (!ownQuiz) throw new Error("Quiz introuvable ou non autorisé.");
-  // Un quiz déjà corrigé ne doit jamais être re-corrigé : sans ce garde-fou,
-  // rejouer gradeQuizAction sur le même quizId permettait de cumuler l'XP
-  // ("quiz_completed" + "quiz_perfect") indéfiniment.
   if (ownQuiz.completed_at) {
+    throw new Error("Ce quiz a déjà été corrigé.");
+  }
+
+  // Réclamation atomique : un simple SELECT (ci-dessus) puis un check en
+  // mémoire est vulnérable à une course (double clic, deux onglets, requête
+  // rejouée pendant la correction) — deux appels concurrents peuvent tous
+  // les deux lire `completed_at IS NULL` avant qu'aucun des deux n'écrive.
+  // On "réclame" donc le quiz via un UPDATE conditionné sur
+  // `completed_at IS NULL` : PostgreSQL sérialise les écritures
+  // concurrentes sur la même ligne, donc un seul appel peut gagner cette
+  // course. Si `claimed` est vide, un autre appel a déjà gagné la
+  // réclamation (ou l'a fait entre notre SELECT et cet UPDATE) : on arrête
+  // ici sans corriger une deuxième fois ni ré-attribuer l'XP. Ceci est une
+  // protection en profondeur ; la garantie définitive contre le double gain
+  // d'XP reste la contrainte unique PostgreSQL de la migration 0022 sur
+  // xp_transactions, qui couvre aussi les autres actions (leçon, exercice).
+  const { data: claimed } = await supabase
+    .from("quiz_attempts")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("id", quizId)
+    .eq("profile_id", user.id)
+    .is("completed_at", null)
+    .select("id")
+    .maybeSingle();
+  if (!claimed) {
     throw new Error("Ce quiz a déjà été corrigé.");
   }
 

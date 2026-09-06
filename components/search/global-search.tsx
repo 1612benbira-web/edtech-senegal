@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, BookText, GraduationCap, Loader2, Search, X, ArrowUpRight } from "lucide-react";
+import { BookOpen, BookText, GraduationCap, Loader2, Search, X, ArrowUpRight, PenSquare } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type Result = {
   id: string;
-  type: "programme" | "matiere" | "chapitre" | "lecon";
+  type: "programme" | "matiere" | "chapitre" | "lecon" | "exercice";
   title: string;
   subtitle?: string | null;
   href: string;
@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<Result["type"], string> = {
   matiere: "Matières",
   chapitre: "Chapitres",
   lecon: "Leçons",
+  exercice: "Exercices",
 };
 
 const TYPE_ICONS = {
@@ -25,6 +26,7 @@ const TYPE_ICONS = {
   matiere: BookOpen,
   chapitre: BookText,
   lecon: BookText,
+  exercice: PenSquare,
 };
 
 export function GlobalSearch() {

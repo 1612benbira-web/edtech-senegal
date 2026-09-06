@@ -17,7 +17,12 @@ import {
   questionSchema,
   questionStatusSchema,
 } from "@/lib/validations/exercise";
-import { getExerciseOwnerSchoolId } from "@/lib/queries/school-content";
+import {
+  getExerciseOwnerSchoolId,
+  getCurriculumOwnerSchoolId,
+  getChapterOwnerSchoolId,
+  getLessonOwnerSchoolId,
+} from "@/lib/queries/school-content";
 import type { ActionState } from "./actions";
 
 function parseOrThrow<T>(schema: { safeParse: (v: unknown) => any }, raw: T) {
@@ -158,6 +163,17 @@ export async function createSchoolChapterAction(
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
     const d = parsed.data!;
 
+    // Vérification explicite de propriété avant écriture : la RLS
+    // (chapters_school_admin_manage, migration 0019) protège déjà la
+    // base contre l'insertion d'un chapitre sous le curriculum d'une
+    // autre école, mais on veut un message d'erreur clair plutôt qu'un
+    // échec RLS brut si quelqu'un forge le formulaire avec l'UUID d'un
+    // curriculum qui n'appartient pas à cette école.
+    const curriculumOwnerSchoolId = await getCurriculumOwnerSchoolId(d.curriculumId);
+    if (curriculumOwnerSchoolId !== schoolId) {
+      return { error: "Ce programme n'appartient pas à ton établissement." };
+    }
+
     const { error } = await supabase.from("chapters").insert({
       curriculum_id: d.curriculumId,
       title: d.title,
@@ -242,6 +258,13 @@ export async function createSchoolLessonAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
     const d = parsed.data!;
+
+    // Même principe que pour createSchoolChapterAction : vérification
+    // explicite avant écriture, en plus de la RLS (lessons_school_admin_manage).
+    const chapterOwnerSchoolId = await getChapterOwnerSchoolId(d.chapterId);
+    if (chapterOwnerSchoolId !== schoolId) {
+      return { error: "Ce chapitre n'appartient pas à ton établissement." };
+    }
 
     const { error } = await supabase.from("lessons").insert({
       chapter_id: d.chapterId,
@@ -333,6 +356,27 @@ export async function createSchoolExerciseAction(
     });
     if (parsed.fieldErrors) return { fieldErrors: parsed.fieldErrors };
     const d = parsed.data!;
+
+    // `isPrivateOnGlobalLesson` vient du formulaire (donc du navigateur) :
+    // on ne lui fait pas confiance pour décider si l'exercice doit être
+    // privé ou non, on vérifie la VRAIE nature de la leçon ciblée.
+    //   - lesson globale (owner = null)  -> doit être créé en exercice
+    //     privé (school_id = schoolId), sinon la RLS le refuserait de
+    //     toute façon (exercices_school_admin_manage), mais on préfère
+    //     un message clair.
+    //   - lesson d'un programme propre à CETTE école -> exercice hérite
+    //     de la confidentialité via la chaîne (school_id = null).
+    //   - lesson d'une AUTRE école -> toujours refusé, quel que soit le
+    //     flag envoyé par le navigateur.
+    const lessonOwnerSchoolId = await getLessonOwnerSchoolId(d.lessonId);
+    if (lessonOwnerSchoolId !== null && lessonOwnerSchoolId !== schoolId) {
+      return { error: "Cette leçon n'appartient pas à ton établissement." };
+    }
+    if (lessonOwnerSchoolId === null && !isPrivateOnGlobalLesson) {
+      return {
+        error: "Cette leçon est un contenu global : l'exercice doit être créé en tant qu'exercice privé.",
+      };
+    }
 
     const { error } = await supabase.from("exercises").insert({
       lesson_id: d.lessonId,

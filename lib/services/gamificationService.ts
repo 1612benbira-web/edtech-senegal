@@ -9,13 +9,35 @@ import { getTodayInTimezone } from "@/lib/utils/timezone";
  * Utilise `service_role` car aucune policy RLS n'autorise l'écriture dans
  * `xp_transactions` pour le rôle `authenticated` (volontairement, pour
  * empêcher toute manipulation de l'XP depuis le client — voir migration 0009).
+ *
+ * IDEMPOTENCE (migration 0022) : chaque récompense est identifiée de façon
+ * unique par (profile_id, reason, referenceId). Un index unique partiel en
+ * base empêche qu'un même triplet soit inséré deux fois — protection
+ * effective même en cas de double clic, deux onglets ouverts sur la même
+ * page, requêtes réseau simultanées, ou nouvelle tentative après un
+ * rafraîchissement pendant la correction. Ceci est délibérément vérifié au
+ * niveau PostgreSQL (contrainte), pas seulement par un `if` applicatif en
+ * amont — un simple check-then-act côté TypeScript reste vulnérable à une
+ * course entre le SELECT de vérification et l'INSERT.
+ *
+ * `referenceId` doit systématiquement être fourni pour une action liée à
+ * une ressource précise (id de leçon, de quiz, de question...) : c'est ce
+ * qui permet à la contrainte de distinguer "même récompense rejouée" de
+ * "récompense différente légitime" (ex. `lesson_completed` sur deux leçons
+ * différentes doit bien accorder l'XP deux fois).
+ *
+ * Retourne `true` si l'XP a effectivement été accordée, `false` si elle
+ * l'avait déjà été (no-op silencieux, pas une erreur) ou si l'insertion a
+ * échoué pour une autre raison (déjà loggée).
  */
+const UNIQUE_VIOLATION = "23505";
+
 export async function awardXp(
   profileId: string,
   amount: number,
   reason: string,
   referenceId?: string
-) {
+): Promise<boolean> {
   const supabase = createServiceRoleClient();
   const { error } = await supabase.from("xp_transactions").insert({
     profile_id: profileId,
@@ -23,7 +45,17 @@ export async function awardXp(
     reason,
     reference_id: referenceId ?? null,
   });
-  if (error) console.error("[gamificationService] Échec awardXp:", error);
+
+  if (!error) return true;
+
+  if (error.code === UNIQUE_VIOLATION) {
+    // Récompense déjà accordée pour ce (profile_id, reason, reference_id) :
+    // comportement attendu en cas de double soumission, pas une erreur.
+    return false;
+  }
+
+  console.error("[gamificationService] Échec awardXp:", error);
+  return false;
 }
 
 /**

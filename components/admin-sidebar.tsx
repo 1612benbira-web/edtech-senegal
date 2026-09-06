@@ -23,6 +23,7 @@ import {
   BookOpen,
   Dumbbell,
   MessageSquare,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { logoutAction } from "@/app/(auth)/actions";
@@ -39,6 +40,7 @@ const SUPER_ADMIN_SECTIONS = [
   {
     label: "Contenu pédagogique",
     items: [
+      { href: "/admin/browse", label: "Bibliothèque (naviguer)", icon: Library },
       { href: "/admin/levels", label: "Cycles & niveaux", icon: Layers },
       { href: "/admin/series", label: "Séries", icon: GitBranch },
       { href: "/admin/subjects", label: "Matières", icon: BookMarked },

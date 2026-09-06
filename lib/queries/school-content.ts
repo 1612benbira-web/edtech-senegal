@@ -35,11 +35,58 @@ export async function getPublishedGlobalCurriculums() {
 }
 
 // ============================================================
-// Vérification de propriété — à quelle école appartient (le cas
-// échéant) un exercice donné ? Utilise le client de SESSION (donc la
-// RLS s'applique) : si l'exercice n'est pas visible pour l'utilisateur
-// courant, la fonction renvoie null comme s'il n'existait pas.
+// Vérification de propriété — curriculum / chapitre / leçon / exercice.
+//
+// Même principe que getExerciseOwnerSchoolId ci-dessous : utilise le
+// client de SESSION (donc la RLS s'applique — cf. migration 0019,
+// curriculum_manageable_by_current_user / curriculum_visible_to_current_user).
+// Si la ressource n'est pas visible pour l'utilisateur courant (école
+// différente, contenu privé d'une autre école), la fonction renvoie
+// null comme si elle n'existait pas.
+//
+// La RLS reste la protection définitive contre l'insertion/modification
+// d'un contenu appartenant à une autre école (WITH CHECK, migration
+// 0019) : même sans cette vérification applicative, un school_admin ne
+// pourrait pas créer un chapitre sous le curriculum_id d'une autre
+// école, l'INSERT échouerait au niveau PostgreSQL. Ces helpers ajoutent
+// une vérification EXPLICITE avant écriture pour deux raisons : (1) un
+// message d'erreur clair plutôt qu'une erreur RLS brute renvoyée à
+// l'UI, (2) une défense en profondeur si la policy RLS venait à changer
+// par erreur dans une migration future.
 // ============================================================
+
+export async function getCurriculumOwnerSchoolId(curriculumId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("curriculums")
+    .select("school_id")
+    .eq("id", curriculumId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.school_id ?? null;
+}
+
+export async function getChapterOwnerSchoolId(chapterId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chapters")
+    .select("curriculums(school_id)")
+    .eq("id", chapterId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data as any).curriculums?.school_id ?? null;
+}
+
+export async function getLessonOwnerSchoolId(lessonId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("chapters(curriculums(school_id))")
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data as any).chapters?.curriculums?.school_id ?? null;
+}
 
 export async function getExerciseOwnerSchoolId(exerciseId: string): Promise<string | null> {
   const supabase = await createClient();

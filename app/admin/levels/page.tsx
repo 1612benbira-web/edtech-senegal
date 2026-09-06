@@ -1,8 +1,9 @@
 import { Layers, GitBranch } from "lucide-react";
 import { getCycles, getLevels } from "@/lib/queries/curriculum";
-import { createCycleAction, createLevelAction, deleteCycleAction, deleteLevelAction } from "../curriculum-actions";
+import { createCycleAction, createLevelAction, deleteCycleAction, deleteLevelAction, getLevelDeletionImpactAction } from "../curriculum-actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { CascadeDeleteButton } from "@/components/admin/cascade-delete-button";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminSection } from "@/components/admin/admin-section";
 import { AdminItemRow } from "@/components/admin/admin-item-row";
@@ -74,10 +75,12 @@ export default async function LevelsAdminPage() {
                 title={level.name}
                 subtitle={`${level.code} — ${level.school_cycles?.name}`}
                 actions={
-                  <DeleteButton
-                    action={deleteLevelAction}
+                  <CascadeDeleteButton
+                    getImpactAction={getLevelDeletionImpactAction}
+                    deleteAction={deleteLevelAction}
                     id={level.id}
-                    confirmMessage={`Supprimer le niveau "${level.name}" ? Cela échouera si des programmes, séries ou matières y sont encore rattachés.`}
+                    label="Supprimer"
+                    itemName={`Niveau : ${level.name}`}
                   />
                 }
               />

@@ -33,7 +33,7 @@
     "db:audit:3e-lotB": "tsx scripts/audit-3e-lotB.ts",
     "db:import:3e-lotC": "tsx scripts/import-3e-lotC.ts",
     "db:audit:3e-lotC": "tsx scripts/audit-3e-lotC.ts",
-"db:audit:6e-anglais-histoire-geo": "tsx scripts/audit-6e-anglais-histoire-geo.ts"
+    "db:audit:6e-anglais-histoire-geo": "tsx scripts/audit-6e-anglais-histoire-geo.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

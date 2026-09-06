@@ -6,9 +6,6 @@ import { awardXp, updateStreak, evaluateBadges } from "@/lib/services/gamificati
 
 /**
  * Marque une leçon comme démarrée (si ce n'est pas déjà fait) ou terminée.
- * L'attribution d'XP pour une leçon terminée sera ajoutée en Phase 11
- * (gamificationService.awardXp), une fois le système XP en place —
- * volontairement pas fait ici pour respecter le découpage par phases.
  */
 export async function markLessonStartedAction(lessonId: string) {
   const supabase = await createClient();
@@ -61,6 +58,9 @@ export async function markLessonCompletedAction(lessonId: string) {
     { onConflict: "profile_id,lesson_id" }
   );
 
+  // awardXp est idempotent (migration 0022) : un re-clic, un double appel,
+  // ou un nouvel appel après retour sur une leçon déjà terminée n'accorde
+  // l'XP qu'une seule fois pour ce (profile_id, "lesson_completed", lessonId).
   await awardXp(user.id, 20, "lesson_completed", lessonId);
   await updateStreak(user.id);
   await evaluateBadges(user.id);

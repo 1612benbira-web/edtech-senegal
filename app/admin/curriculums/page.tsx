@@ -6,9 +6,11 @@ import {
   createCurriculumAction,
   updateCurriculumStatusAction,
   deleteCurriculumAction,
+  getCurriculumDeletionImpactAction,
 } from "../curriculum-content-actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { CascadeDeleteButton } from "@/components/admin/cascade-delete-button";
 import { StatusSelector } from "@/components/admin/status-selector";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminSection } from "@/components/admin/admin-section";
@@ -103,10 +105,12 @@ export default async function CurriculumsAdminPage() {
                   id={c.id}
                   currentStatus={c.status}
                 />
-                <DeleteButton
-                  action={deleteCurriculumAction}
+                <CascadeDeleteButton
+                  getImpactAction={getCurriculumDeletionImpactAction}
+                  deleteAction={deleteCurriculumAction}
                   id={c.id}
-                  confirmMessage={`Supprimer le programme "${c.title}" ? Cela échouera si des chapitres y sont rattachés.`}
+                  label="Supprimer"
+                  itemName={`Programme : ${c.title}`}
                 />
               </div>
             </div>

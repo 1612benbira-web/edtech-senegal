@@ -140,6 +140,7 @@ export interface Database {
           level_id: string;
           series_id: string | null;
           subject_id: string;
+          school_id: string | null;
           title: string;
           description: string | null;
           version: string;
@@ -227,6 +228,7 @@ export interface Database {
           id: string;
           lesson_id: string;
           competency_id: string | null;
+          school_id: string | null;
           title: string;
           instructions: string | null;
           difficulty: "easy" | "medium" | "hard" | "expert";
@@ -529,6 +531,25 @@ export interface Database {
       fan_out_message_notifications: {
         Args: { p_message_id: string };
         Returns: number;
+      };
+      // Phase 22 — suppression en cascade Super Admin (migration 0023).
+      // Les 4 fonctions renvoient un jsonb de compteurs (domaines,
+      // chapitres, leçons, exercices, questions...), d'où Record<string, number>.
+      get_curriculum_deletion_impact: {
+        Args: { p_curriculum_id: string };
+        Returns: Record<string, number>;
+      };
+      delete_curriculum_cascade: {
+        Args: { p_curriculum_id: string };
+        Returns: Record<string, number>;
+      };
+      get_level_deletion_impact: {
+        Args: { p_level_id: string };
+        Returns: Record<string, number>;
+      };
+      delete_level_cascade: {
+        Args: { p_level_id: string };
+        Returns: Record<string, number>;
       };
     };
     Enums: Record<string, never>;

@@ -39,6 +39,15 @@ export interface ProgrammeSubject {
   /** Chapitre utilisé par la page de reprise. */
   resumeChapterId: string | null;
   resumeChapterTitle: string | null;
+  /**
+   * Date de la dernière activité réelle de l'élève sur cette matière
+   * (started_at d'une leçon en cours, ou completed_at d'une leçon
+   * terminée) — permet de déterminer, TOUTES MATIÈRES CONFONDUES, celle
+   * que l'élève a travaillée en dernier (cf. bouton "Continuer
+   * l'apprentissage" du dashboard). `null` si la matière n'a encore
+   * aucune activité enregistrée.
+   */
+  lastActivityAt: string | null;
   chapters: ProgrammeChapter[];
 }
 
@@ -135,6 +144,7 @@ export async function getMyProgramme(
         nextExerciseId: null,
         resumeChapterId: null,
         resumeChapterTitle: null,
+        lastActivityAt: null,
         chapters: [],
       });
       continue;
@@ -450,6 +460,11 @@ export async function getMyProgramme(
       nextExerciseId,
       resumeChapterId: resumeChapter?.id ?? null,
       resumeChapterTitle: resumeChapter?.title ?? null,
+      lastActivityAt: latestActivity
+        ? latestActivity.status === "completed"
+          ? latestActivity.completed_at ?? latestActivity.started_at
+          : latestActivity.started_at ?? latestActivity.completed_at
+        : null,
       chapters: chaptersOut,
     });
   }

@@ -119,38 +119,55 @@ export async function updateCurriculumStatusAction(
   }
 }
 
+/**
+ * Aperçu de l'impact AVANT suppression : utilisé par la boîte de
+ * confirmation (CascadeDeleteButton) pour afficher "cette action
+ * supprimera également X chapitres, X leçons...". Lecture seule.
+ */
+export async function getCurriculumDeletionImpactAction(
+  curriculumId: string
+): Promise<{ data?: Record<string, number>; error?: string }> {
+  try {
+    const { supabase } = await requireAdmin();
+    const { data, error } = await supabase.rpc("get_curriculum_deletion_impact", {
+      p_curriculum_id: curriculumId,
+    });
+    if (error) return { error: error.message };
+    return { data: data as Record<string, number> };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+/**
+ * Supprime un programme ENTIER et tout ce qui en dépend (domaines,
+ * compétences, chapitres, leçons, exercices, questions, options de
+ * réponses, associations quiz, tentatives d'élèves) — réservé au
+ * super_admin (Phase 22). Contrairement à school_admin, qui ne peut
+ * jamais toucher au contenu global, le super_admin peut supprimer même
+ * si le programme est activé dans plusieurs écoles ou contient des
+ * exercices déjà utilisés par des élèves : ces restrictions ne
+ * s'appliquent qu'au school_admin (RLS `curriculums_school_admin_manage`,
+ * migration 0019 — school_id doit être non-null, jamais le cas d'un
+ * programme global).
+ *
+ * La suppression réelle est effectuée par la fonction PostgreSQL
+ * `delete_curriculum_cascade` (migration 0023), qui vérifie elle-même
+ * `is_admin()` et s'exécute comme une seule transaction : si une étape
+ * échoue, tout est annulé, aucune suppression partielle ne peut
+ * survenir. `requireAdmin()` ici donne un message d'erreur clair côté
+ * UI avant même d'atteindre la base si l'appelant n'est pas admin.
+ */
 export async function deleteCurriculumAction(curriculumId: string): Promise<ActionState> {
   try {
     const { supabase } = await requireAdmin();
-
-    // Un programme peut avoir des chapitres et des domaines rattachés.
-    // Les chapitres sont comptés y compris ceux déjà "soft-deleted"
-    // (deleted_at renseigné) : la ligne existe toujours en base et la
-    // contrainte de clé étrangère bloquerait de toute façon la suppression
-    // du programme tant qu'elle existe. On préfère l'expliquer clairement
-    // plutôt que de forcer un ON DELETE CASCADE qui effacerait
-    // silencieusement des chapitres/leçons/exercices/questions.
-    const [{ count: chaptersCount, error: chErr }, { count: domainsCount, error: domErr }] = await Promise.all([
-      supabase.from("chapters").select("id", { count: "exact", head: true }).eq("curriculum_id", curriculumId),
-      supabase.from("domains").select("id", { count: "exact", head: true }).eq("curriculum_id", curriculumId),
-    ]);
-    if (chErr) return { error: chErr.message };
-    if (domErr) return { error: domErr.message };
-
-    const blockers: string[] = [];
-    if ((chaptersCount ?? 0) > 0) blockers.push(`${chaptersCount} chapitre(s)`);
-    if ((domainsCount ?? 0) > 0) blockers.push(`${domainsCount} domaine(s)`);
-
-    if (blockers.length > 0) {
-      return {
-        error: `Impossible de supprimer ce programme : ${blockers.join(", ")} y sont encore rattaché(s) (y compris les chapitres archivés). Supprime d'abord ces éléments.`,
-      };
-    }
-
-    const { error } = await supabase.from("curriculums").delete().eq("id", curriculumId);
+    const { error } = await supabase.rpc("delete_curriculum_cascade", {
+      p_curriculum_id: curriculumId,
+    });
     if (error) return { error: error.message };
 
     revalidatePath("/admin/curriculums");
+    revalidatePath("/admin/levels");
     return { success: true };
   } catch (e) {
     return { error: (e as Error).message };

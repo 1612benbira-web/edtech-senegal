@@ -185,39 +185,34 @@ export async function deleteCycleAction(cycleId: string): Promise<ActionState> {
   }
 }
 
+export async function getLevelDeletionImpactAction(
+  levelId: string
+): Promise<{ data?: Record<string, number>; error?: string }> {
+  try {
+    const { supabase } = await requireAdmin();
+    const { data, error } = await supabase.rpc("get_level_deletion_impact", {
+      p_level_id: levelId,
+    });
+    if (error) return { error: error.message };
+    return { data: data as Record<string, number> };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
 export async function deleteLevelAction(levelId: string): Promise<ActionState> {
   try {
     const { supabase } = await requireAdmin();
 
-    // Un niveau peut avoir des programmes (curriculums), des séries et des
-    // associations niveau/matière (level_subjects) rattachés. Aucune de ces
-    // tables n'a de suppression en cascade ni de soft-delete : une
-    // suppression directe échouerait sur une contrainte de clé étrangère et
-    // ce message le remplace par une explication claire pour l'admin,
-    // plutôt que de forcer un CASCADE qui effacerait du contenu pédagogique
-    // sans confirmation explicite.
-    const [{ count: curriculumsCount, error: curErr }, { count: seriesCount, error: seriesErr }, { count: levelSubjectsCount, error: lsErr }] =
-      await Promise.all([
-        supabase.from("curriculums").select("id", { count: "exact", head: true }).eq("level_id", levelId),
-        supabase.from("school_series").select("id", { count: "exact", head: true }).eq("level_id", levelId),
-        supabase.from("level_subjects").select("id", { count: "exact", head: true }).eq("level_id", levelId),
-      ]);
-    if (curErr) return { error: curErr.message };
-    if (seriesErr) return { error: seriesErr.message };
-    if (lsErr) return { error: lsErr.message };
-
-    const blockers: string[] = [];
-    if ((curriculumsCount ?? 0) > 0) blockers.push(`${curriculumsCount} programme(s)`);
-    if ((seriesCount ?? 0) > 0) blockers.push(`${seriesCount} série(s)`);
-    if ((levelSubjectsCount ?? 0) > 0) blockers.push(`${levelSubjectsCount} matière(s) associée(s)`);
-
-    if (blockers.length > 0) {
-      return {
-        error: `Impossible de supprimer ce niveau : ${blockers.join(", ")} y sont encore rattaché(s). Supprime d'abord ces éléments.`,
-      };
-    }
-
-    const { error } = await supabase.from("school_levels").delete().eq("id", levelId);
+    // Suppression en cascade réelle (Phase 22) : contrairement à
+    // l'ancienne version, le super_admin peut désormais supprimer un
+    // niveau entier même si des programmes, séries, matières associées
+    // ou élèves y sont rattachés — voir delete_level_cascade (migration
+    // 0023), qui gère elle-même l'ordre des dépendances et s'exécute
+    // comme une seule transaction (tout ou rien). Les élèves rattachés
+    // perdent leur affectation niveau/série (jamais leur compte ni leur
+    // XP) et devront la resélectionner via l'onboarding.
+    const { error } = await supabase.rpc("delete_level_cascade", { p_level_id: levelId });
     if (error) return { error: error.message };
 
     revalidatePath("/admin/levels");

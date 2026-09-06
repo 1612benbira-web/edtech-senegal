@@ -78,7 +78,24 @@ export default async function DashboardPage() {
   const enrolledSubjectIds = new Set(programmes.map((p) => p.subjectId));
   const availableSubjects = (availableLevelSubjects ?? []).filter((item: any) => (item.series_id === null || item.series_id === profile.series_id) && !enrolledSubjectIds.has(item.subject_id));
   const totalLessonsDone = programmes.reduce((sum, p) => sum + p.completedLessons, 0);
-  const nextLesson = programmes.find((program) => program.nextLessonId)?.nextLessonId ?? null;
+  // Avant : `programmes.find((program) => program.nextLessonId)` prenait la
+  // PREMIÈRE matière de la liste (ordre d'inscription de l'élève, pas
+  // pertinent) qui avait une leçon en attente — n'importe quelle matière
+  // jamais commencée en avait toujours une, donc le bouton "Continuer
+  // l'apprentissage" pouvait renvoyer vers une matière que l'élève n'avait
+  // jamais ouverte au lieu de celle où il travaillait réellement en
+  // dernier. On compare maintenant `lastActivityAt` (dernière activité
+  // réelle enregistrée) entre toutes les matières ayant une suite, et on
+  // ne retombe sur la première de la liste que si l'élève n'a encore
+  // AUCUNE activité nulle part (première visite).
+  const resumableProgrammes = programmes.filter((program) => program.nextLessonId);
+  const mostRecentProgramme =
+    resumableProgrammes
+      .filter((program) => program.lastActivityAt)
+      .sort(
+        (a, b) => new Date(b.lastActivityAt!).getTime() - new Date(a.lastActivityAt!).getTime()
+      )[0] ?? resumableProgrammes[0];
+  const nextLesson = mostRecentProgramme?.nextLessonId ?? null;
   const xp = profile.xp_total ?? 0;
   const levelName = profileWithSchool.school_levels?.name ?? "";
   const levelNumber = levelName.match(/\d+/)?.[0] ?? "—";
