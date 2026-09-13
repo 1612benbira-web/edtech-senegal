@@ -11,6 +11,7 @@ import {
 import { getOrCreateDailyQuiz } from "@/lib/services/dailyQuizService";
 import { recordCompetencyAttempt } from "@/lib/services/progressService";
 import { awardXp, updateStreak, evaluateBadges } from "@/lib/services/gamificationService";
+import { gradeQuestion, type GradableQuestionType } from "@/lib/services/questionGrading";
 
 async function getCurrentProfile() {
   const supabase = await createClient();
@@ -144,28 +145,14 @@ export async function gradeQuizAction(
 
   for (const qq of quizQuestions ?? []) {
     const q = (qq as any).questions;
-    const options = q.question_options as { id: string; label: string; is_correct: boolean }[];
+    const options = (q.question_options as { id: string; label: string; is_correct: boolean }[]).map((o) => ({
+      ...o,
+      match_key: null,
+      order: null,
+    }));
     const correctOptions = options.filter((o) => o.is_correct);
     const studentAnswer = answers[q.id];
-    let isCorrect = false;
-
-    if (q.type === "single_choice" || q.type === "true_false") {
-      isCorrect = !!studentAnswer && correctOptions.some((o) => o.id === studentAnswer);
-    } else if (q.type === "multiple_choice") {
-      const submitted = Array.isArray(studentAnswer) ? studentAnswer : [];
-      const correctIds = correctOptions.map((o) => o.id).sort();
-      const submittedSorted = [...submitted].sort();
-      isCorrect =
-        correctIds.length === submittedSorted.length &&
-        correctIds.every((id, i) => id === submittedSorted[i]);
-    } else if (q.type === "numeric") {
-      const expected = parseFloat(correctOptions[0]?.label ?? "");
-      const given = parseFloat(String(studentAnswer ?? "").replace(",", "."));
-      isCorrect = !isNaN(expected) && !isNaN(given) && Math.abs(expected - given) < 1e-6;
-    } else if (q.type === "short_answer") {
-      const given = String(studentAnswer ?? "").trim().toLowerCase();
-      isCorrect = correctOptions.some((o) => o.label.trim().toLowerCase() === given);
-    }
+    const isCorrect = gradeQuestion(q.type as GradableQuestionType, options, studentAnswer);
 
     if (isCorrect) correctCount++;
 

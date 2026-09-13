@@ -52,6 +52,36 @@ export async function completeOnboardingAction(
   const { levelId, seriesId, subjectIds } = parsed.data;
 
   /*
+   * Défense en profondeur : le filtrage matières ↔ niveau/série se fait
+   * côté client (onboarding-form.tsx), mais rien n'empêchait jusqu'ici un
+   * formulaire modifié ou un état de formulaire périmé d'envoyer des
+   * subjectIds qui n'existent pas pour ce niveau/cette série (ex. une
+   * matière de Terminale pour un profil 6e). On revérifie donc ici, comme
+   * pour la sélection du curriculum (voir lib/queries/programme.ts).
+   */
+  const { data: allowedSubjects, error: allowedSubjectsError } = await supabase
+    .from("level_subjects")
+    .select("subject_id")
+    .eq("level_id", levelId)
+    .or(seriesId ? `series_id.eq.${seriesId},series_id.is.null` : "series_id.is.null");
+
+  if (allowedSubjectsError) {
+    return { error: allowedSubjectsError.message };
+  }
+
+  const allowedSubjectIds = new Set((allowedSubjects ?? []).map((s) => s.subject_id));
+  const invalidSubjectIds = subjectIds.filter((id) => !allowedSubjectIds.has(id));
+
+  if (invalidSubjectIds.length > 0) {
+    return {
+      fieldErrors: {
+        subjectIds:
+          "Une ou plusieurs matières sélectionnées ne correspondent pas à ton niveau/ta série. Réessaie.",
+      },
+    };
+  }
+
+  /*
    * Validation du prénom.
    */
   if (!firstName) {

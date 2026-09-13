@@ -15,13 +15,13 @@ export default async function ContinuePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("level_id")
+    .select("level_id, series_id")
     .eq("id", user.id)
     .single();
 
   if (!profile?.level_id) redirect("/onboarding");
 
-  const programmes = await getMyProgramme(user.id, profile.level_id);
+  const programmes = await getMyProgramme(user.id, profile.level_id, profile.series_id);
   const resumable = programmes.filter((program) => program.resumeChapterId || program.status === "completed");
 
   return (

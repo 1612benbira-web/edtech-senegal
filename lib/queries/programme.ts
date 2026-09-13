@@ -58,14 +58,65 @@ type ProgressRow = {
   completed_at: string | null;
 };
 
+type CurriculumCandidate = {
+  id: string;
+  description: string | null;
+  series_id: string | null;
+  created_at: string;
+};
+
+/**
+ * Sélectionne, parmi plusieurs curriculums candidats pour une matière/un
+ * niveau donnés, celui qui correspond réellement à la série de l'élève.
+ *
+ * Un curriculum avec `series_id = null` est un programme commun à toutes
+ * les séries du niveau (ex. Français en Seconde) : il reste valable pour
+ * tout élève de ce niveau. Un curriculum avec `series_id` renseigné est
+ * spécifique à une série (ex. Mathématiques Seconde S2 vs L2) et ne doit
+ * JAMAIS être proposé à un élève d'une autre série.
+ *
+ * Priorité : curriculum spécifique à la série de l'élève > curriculum
+ * commun (series_id null). À égalité, le plus récent (created_at) gagne.
+ */
+export function pickCurriculumForSeries(
+  candidates: CurriculumCandidate[],
+  seriesId: string | null
+): CurriculumCandidate | null {
+  const bySeries = candidates.filter((c) => c.series_id === seriesId);
+  const common = candidates.filter((c) => c.series_id === null);
+
+  const sortByRecency = (a: CurriculumCandidate, b: CurriculumCandidate) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+  if (seriesId && bySeries.length > 0) {
+    return [...bySeries].sort(sortByRecency)[0];
+  }
+
+  if (!seriesId) {
+    // Élève sans série (classe qui n'en a pas) : seuls les curriculums
+    // communs le concernent — jamais un curriculum d'une série qu'il n'a
+    // pas.
+    return common.length > 0 ? [...common].sort(sortByRecency)[0] : null;
+  }
+
+  return common.length > 0 ? [...common].sort(sortByRecency)[0] : null;
+}
+
 /**
  * Construit le programme réel de l'élève : matière → chapitres → leçons.
  * La progression est relue depuis lesson_progress et les exercices depuis
  * exercise_attempts. Aucune donnée de progression n'est inventée.
+ *
+ * `seriesId` doit être la série réelle de l'élève (profiles.series_id),
+ * ou `null` pour un niveau/une classe sans série. Elle est indispensable
+ * pour choisir le bon curriculum quand plusieurs versions existent pour
+ * la même matière/le même niveau (ex. Maths Seconde S2 vs L2) — voir
+ * pickCurriculumForSeries ci-dessus.
  */
 export async function getMyProgramme(
   profileId: string,
-  levelId: string
+  levelId: string,
+  seriesId: string | null = null
 ): Promise<ProgrammeSubject[]> {
   const supabase = await createClient();
 
@@ -90,37 +141,46 @@ export async function getMyProgramme(
     // /admin/schools/[id]/content) pour cette matière/ce niveau — il n'a
     // pas besoin d'une ligne school_curriculums, son appartenance est
     // directe (curriculums.school_id).
-    let rawCurriculum: { id: string; description: string | null } | null = null;
+    //
+    // On récupère TOUS les curriculums candidats (série de l'élève OU
+    // communs à toutes les séries) puis on choisit le bon en JS : filtrer
+    // uniquement par level_id+subject_id (comme avant) mélangeait des
+    // curriculums de séries différentes (ex. Maths Seconde S2 et L2) et
+    // ne gardait que le plus récent, sans tenir compte de la série réelle
+    // de l'élève — c'était la cause du Bug 1 (contenu non différencié par
+    // série).
+    let rawCurriculum: CurriculumCandidate | null = null;
 
     if (schoolId) {
       const { data: owned } = await supabase
         .from("curriculums")
-        .select("id, description")
+        .select("id, description, series_id, created_at")
         .eq("subject_id", subject.id)
         .eq("level_id", levelId)
         .eq("status", "published")
         .eq("school_id", schoolId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      rawCurriculum = owned;
+        .or(seriesId ? `series_id.eq.${seriesId},series_id.is.null` : "series_id.is.null");
+      rawCurriculum = pickCurriculumForSeries((owned ?? []) as CurriculumCandidate[], seriesId);
     }
 
     // Priorité 2 : le programme national partagé, à condition d'être
     // activé pour l'école de l'élève (ou pas de restriction d'école pour
     // un compte non rattaché — voir isCurriculumAllowedForSchool).
-    let curriculum = rawCurriculum;
+    let curriculum: CurriculumCandidate | null = rawCurriculum;
     if (!curriculum) {
-      const { data: globalCurriculum } = await supabase
+      const { data: globalCandidates } = await supabase
         .from("curriculums")
-        .select("id, description")
+        .select("id, description, series_id, created_at")
         .eq("subject_id", subject.id)
         .eq("level_id", levelId)
         .eq("status", "published")
         .is("school_id", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .or(seriesId ? `series_id.eq.${seriesId},series_id.is.null` : "series_id.is.null");
+
+      const globalCurriculum = pickCurriculumForSeries(
+        (globalCandidates ?? []) as CurriculumCandidate[],
+        seriesId
+      );
 
       curriculum =
         globalCurriculum && (await isCurriculumAllowedForSchool(schoolId, globalCurriculum.id))

@@ -18,11 +18,11 @@ export default async function ChapterPage({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("level_id").eq("id", user!.id).single();
+  const { data: profile } = await supabase.from("profiles").select("level_id, series_id").eq("id", user!.id).single();
   if (!profile?.level_id || (chapter as any).curriculums?.level_id !== profile.level_id) notFound();
 
   const lessons = await getPublishedLessonsForChapter(params.chapter);
-  const programmes = await getMyProgramme(user!.id, profile.level_id);
+  const programmes = await getMyProgramme(user!.id, profile.level_id, profile.series_id);
   const subjectProgramme = programmes.find((program) => program.subjectId === (chapter as any).curriculums?.subject_id);
   const chapterProgress = subjectProgramme?.chapters.find((item) => item.id === params.chapter);
 

@@ -19,7 +19,7 @@ export default async function LessonPage({
 
   const authClient = await createClient();
   const { data: { user } } = await authClient.auth.getUser();
-  const { data: profile } = await authClient.from("profiles").select("level_id").eq("id", user!.id).single();
+  const { data: profile } = await authClient.from("profiles").select("level_id, series_id").eq("id", user!.id).single();
   if (!profile?.level_id || (lesson as any).chapters?.curriculums?.level_id !== profile.level_id) notFound();
 
   // Le programme peut être publié sans être activé pour l'école de
@@ -42,7 +42,7 @@ export default async function LessonPage({
   const [exercises, navigation, programmes] = await Promise.all([
     getPublishedExercisesForLesson(params.lessonId),
     getLessonNavigation(params.lessonId),
-    getMyProgramme(user!.id, profile.level_id),
+    getMyProgramme(user!.id, profile.level_id, profile.series_id),
   ]);
 
   const subjectProgramme = programmes.find(

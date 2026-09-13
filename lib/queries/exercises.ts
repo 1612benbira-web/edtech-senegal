@@ -30,7 +30,8 @@ export async function getQuestionsForExercise(exerciseId: string) {
     .select("*, question_options(*)")
     .eq("exercise_id", exerciseId)
     .is("deleted_at", null)
-    .order("created_at");
+    .order("created_at")
+    .order("order", { referencedTable: "question_options" });
   if (error) throw error;
   return data;
 }
@@ -74,7 +75,15 @@ export async function getPublishedQuestionsForExercise(exerciseId: string) {
     .eq("exercise_id", exerciseId)
     .eq("status", "published")
     .is("deleted_at", null)
-    .order("created_at");
+    .order("created_at")
+    // Indispensable pour les questions "matching" : exercise-runner.tsx
+    // associe chaque item de gauche à sa réponse par POSITION dans le
+    // tableau (question_options[index]), et gradeExerciseAction() refait
+    // une requête séparée sur cette même table pour corriger. Sans un tri
+    // explicite ici ET côté correction, rien ne garantit que les deux
+    // requêtes renvoient les options dans le même ordre — un élève pouvait
+    // alors se voir corrigé sur un mauvais appariement.
+    .order("order", { referencedTable: "question_options" });
   if (error) throw error;
   return data;
 }

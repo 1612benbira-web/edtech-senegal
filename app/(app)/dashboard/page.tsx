@@ -67,7 +67,7 @@ export default async function DashboardPage() {
 
   const [{ data: availableLevelSubjects }, programmes, streak, earnedBadges, leaderboard, myRank, currentSchool] = await Promise.all([
     supabase.from("level_subjects").select("subject_id, series_id, is_optional, subjects(id, name, icon)").eq("level_id", profile.level_id),
-    getMyProgramme(user.id, profile.level_id),
+    getMyProgramme(user.id, profile.level_id, profile.series_id),
     getStreak(user.id),
     getEarnedBadges(user.id),
     getLevelLeaderboard(profile.level_id),

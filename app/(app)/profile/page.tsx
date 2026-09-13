@@ -15,13 +15,13 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name, xp_total, level_id, school_levels(name), school_series(name)")
+    .select("first_name, last_name, xp_total, level_id, series_id, school_levels(name), school_series(name)")
     .eq("id", user.id)
     .single();
   if (!profile?.level_id) redirect("/onboarding");
 
   const [programmes, streak] = await Promise.all([
-    getMyProgramme(user.id, profile.level_id),
+    getMyProgramme(user.id, profile.level_id, profile.series_id),
     getStreak(user.id),
   ]);
 

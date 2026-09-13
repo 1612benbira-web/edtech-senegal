@@ -4,6 +4,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { recordCompetencyAttempt } from "@/lib/services/progressService";
 import { awardXp, updateStreak, evaluateBadges } from "@/lib/services/gamificationService";
 import { getLessonNavigation } from "@/lib/queries/lessons";
+import { gradeQuestion, type GradableQuestionType } from "@/lib/services/questionGrading";
 
 export interface QuestionResult {
   questionId: string;
@@ -63,7 +64,12 @@ export async function gradeExerciseAction(
     .select('id, type, explanation, points, competency_id, question_options(id, label, is_correct, match_key, order)')
     .eq("exercise_id", exerciseId)
     .eq("status", "published")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    // Même ordre que getPublishedQuestionsForExercise (voir son commentaire) :
+    // requis pour que l'index d'une option corresponde au même item pour
+    // l'élève et pour la correction — sinon les questions "matching" sont
+    // corrigées sur un mauvais appariement de façon silencieuse.
+    .order("order", { referencedTable: "question_options" });
 
   if (error) throw error;
 
@@ -101,39 +107,7 @@ export async function gradeExerciseAction(
     }[];
     const correctOptions = options.filter((o) => o.is_correct);
     const studentAnswer = answers[q.id];
-    let isCorrect = false;
-
-    if (q.type === "single_choice" || q.type === "true_false") {
-      isCorrect = !!studentAnswer && correctOptions.some((o) => o.id === studentAnswer);
-    } else if (q.type === "multiple_choice") {
-      const submitted = Array.isArray(studentAnswer) ? studentAnswer : [];
-      const correctIds = correctOptions.map((o) => o.id).sort();
-      const submittedSorted = [...submitted].sort();
-      isCorrect =
-        correctIds.length === submittedSorted.length &&
-        correctIds.every((id, i) => id === submittedSorted[i]);
-    } else if (q.type === "numeric") {
-      const expected = parseFloat(correctOptions[0]?.label ?? "");
-      const given = parseFloat(String(studentAnswer ?? "").replace(",", "."));
-      isCorrect = !isNaN(expected) && !isNaN(given) && Math.abs(expected - given) < 1e-6;
-    } else if (q.type === "short_answer") {
-      const given = String(studentAnswer ?? "").trim().toLowerCase();
-      isCorrect = correctOptions.some((o) => o.label.trim().toLowerCase() === given);
-    } else if (q.type === "matching") {
-      const submitted = Array.isArray(studentAnswer) ? studentAnswer : [];
-      const expected = options.map((o) => o.match_key ?? "");
-      isCorrect =
-        expected.length === submitted.length &&
-        expected.every((value, index) => value.trim().toLowerCase() === String(submitted[index] ?? "").trim().toLowerCase());
-    } else if (q.type === "ordering") {
-      const submitted = Array.isArray(studentAnswer) ? studentAnswer : [];
-      const expected = [...options]
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((o) => o.id);
-      isCorrect =
-        expected.length === submitted.length &&
-        expected.every((id, index) => id === submitted[index]);
-    }
+    const isCorrect = gradeQuestion(q.type as GradableQuestionType, options, studentAnswer);
 
     if (isCorrect) {
       correctCount++;

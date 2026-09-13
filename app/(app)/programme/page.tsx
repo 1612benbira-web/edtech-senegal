@@ -20,7 +20,7 @@ export default async function ProgrammePage() {
 
   if (!profile?.level_id) redirect("/onboarding");
 
-  const programmes = await getMyProgramme(user!.id, profile.level_id);
+  const programmes = await getMyProgramme(user!.id, profile.level_id, profile.series_id);
 
   return (
     <div>
