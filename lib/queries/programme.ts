@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
 
 export type LessonStatus = "not_started" | "in_progress" | "completed";
@@ -89,17 +89,17 @@ export function pickCurriculumForSeries(
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 
   if (seriesId && bySeries.length > 0) {
-    return [...bySeries].sort(sortByRecency)[0];
+    return [...bySeries].sort(sortByRecency)[0] ?? null;
   }
 
   if (!seriesId) {
     // Élève sans série (classe qui n'en a pas) : seuls les curriculums
     // communs le concernent — jamais un curriculum d'une série qu'il n'a
     // pas.
-    return common.length > 0 ? [...common].sort(sortByRecency)[0] : null;
+    return common.length > 0 ? [...common].sort(sortByRecency)[0] ?? null : null;
   }
 
-  return common.length > 0 ? [...common].sort(sortByRecency)[0] : null;
+  return common.length > 0 ? [...common].sort(sortByRecency)[0] ?? null : null;
 }
 
 /**
