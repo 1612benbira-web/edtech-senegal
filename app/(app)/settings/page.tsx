@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AlertTriangle, User, GraduationCap, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { DeleteAccountDialog } from "./delete-account-dialog";
 import { EditNameForm } from "./edit-name-form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatNiveauLabel } from "@/lib/utils/niveau";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -63,7 +64,11 @@ export default async function SettingsPage() {
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Niveau</dt>
-            <dd className="text-foreground">{(profile as any)?.school_levels?.name ?? "—"}</dd>
+            <dd className="text-foreground">
+              {(profile as any)?.school_levels?.name
+                ? formatNiveauLabel((profile as any).school_levels.name, (profile as any)?.school_series?.name)
+                : "—"}
+            </dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Série</dt>

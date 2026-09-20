@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Award, BookOpen, CheckCircle2, Flame, GraduationCap, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProgramme } from "@/lib/queries/programme";
 import { getStreak } from "@/lib/queries/gamification";
 import { Card } from "@/components/ui/card";
+import { formatNiveauLabel } from "@/lib/utils/niveau";
 
 export const metadata: Metadata = { title: "Profil" };
 
@@ -50,8 +51,9 @@ export default async function ProfilePage() {
             <h1 className="mt-1 text-3xl font-bold text-foreground">{profile.first_name} {profile.last_name}</h1>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <GraduationCap className="h-4 w-4" />
-              {(profile as any).school_levels?.name ?? "Niveau non renseigné"}
-              {(profile as any).school_series?.name && ` · ${(profile as any).school_series.name}`}
+              {(profile as any).school_levels?.name
+                ? formatNiveauLabel((profile as any).school_levels.name, (profile as any).school_series?.name)
+                : "Niveau non renseigné"}
             </p>
           </div>
           <div className="sm:ml-auto rounded-2xl bg-muted px-4 py-3 text-center">

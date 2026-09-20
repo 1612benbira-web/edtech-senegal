@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Star, Flame, Award, Target, BookOpen, CheckCircle2, ArrowRight, Trophy, ChevronRight, Zap, Medal, Sparkles } from "lucide-react";
@@ -13,6 +13,7 @@ import { AddProgramModal } from "@/components/curriculum/add-program-modal";
 import { Badge } from "@/components/ui/badge";
 import { getLevelLeaderboard, getMyLevelRank } from "@/lib/queries/leaderboard";
 import { getTimeBasedGreeting } from "@/lib/utils/timezone";
+import { formatNiveauBadge } from "@/lib/utils/niveau";
 export const metadata: Metadata = { title: "Tableau de bord" };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
@@ -98,7 +99,8 @@ export default async function DashboardPage() {
   const nextLesson = mostRecentProgramme?.nextLessonId ?? null;
   const xp = profile.xp_total ?? 0;
   const levelName = profileWithSchool.school_levels?.name ?? "";
-  const levelNumber = levelName.match(/\d+/)?.[0] ?? "—";
+  const seriesName = profileWithSchool.school_series?.name ?? null;
+  const levelNumber = formatNiveauBadge(levelName, seriesName);
   const xpProgress = Math.min(99, xp % 1000 === 0 && xp > 0 ? 100 : xp % 1000 / 10);
 
   return (
