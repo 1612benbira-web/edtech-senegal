@@ -59,6 +59,27 @@ export const schoolMemberSchema = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
 });
 
+export const teacherAssignmentSchema = z.object({
+  schoolId: z.string().uuid("École requise"),
+  // Optionnel : si renseigné, cette personne est désignée enseignant
+  // (utilisateur existant rattaché immédiatement, ou invitation envoyée
+  // si le compte n'existe pas encore — même logique que adminEmail sur
+  // schoolSchema, cf. assignTeacherAction).
+  teacherEmail: z.string().email("Adresse email invalide."),
+  subjectId: z.string().uuid("Matière requise"),
+  levelId: z.string().uuid("Niveau requis"),
+  seriesId: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || undefined)
+    .refine((v) => !v || z.string().uuid().safeParse(v).success, { message: "Série invalide." }),
+});
+
+export const teacherAssignmentRemoveSchema = z.object({
+  schoolId: z.string().uuid(),
+  assignmentId: z.string().uuid(),
+});
+
 export const schoolMemberStatusSchema = z.object({
   schoolMemberId: z.string().uuid(),
   status: z.enum(["active", "inactive"]),

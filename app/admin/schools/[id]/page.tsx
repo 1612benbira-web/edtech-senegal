@@ -62,6 +62,12 @@ export default async function SchoolDetailPage({ params }: { params: { id: strin
           Élèves & enseignants
         </Link>
         <Link
+          href={`/admin/schools/${school.id}/teachers`}
+          className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+        >
+          Enseignants & matières
+        </Link>
+        <Link
           href={`/admin/schools/${school.id}/curriculums`}
           className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
         >

@@ -121,6 +121,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["school_members"]["Row"]>;
         Relationships: [{ foreignKeyName: "school_members_school_id_fkey"; columns: ["school_id"]; isOneToOne: false; referencedRelation: "schools"; referencedColumns: ["id"] }, { foreignKeyName: "school_members_profile_id_fkey"; columns: ["profile_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
+      // Affectation enseignant <-> matière <-> niveau, par école
+      // (migration 0025). seriesId à null = couvre toutes les séries
+      // de ce niveau (ne s'applique qu'aux matières du lycée).
+      school_subject_teachers: {
+        Row: {
+          id: string;
+          school_id: string;
+          subject_id: string;
+          level_id: string;
+          series_id: string | null;
+          teacher_profile_id: string;
+          created_at: string;
+          [key: string]: unknown;
+        };
+        Insert: Partial<Database["public"]["Tables"]["school_subject_teachers"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["school_subject_teachers"]["Row"]>;
+        Relationships: [{ foreignKeyName: "school_subject_teachers_school_id_fkey"; columns: ["school_id"]; isOneToOne: false; referencedRelation: "schools"; referencedColumns: ["id"] }, { foreignKeyName: "school_subject_teachers_subject_id_fkey"; columns: ["subject_id"]; isOneToOne: false; referencedRelation: "subjects"; referencedColumns: ["id"] }, { foreignKeyName: "school_subject_teachers_level_id_fkey"; columns: ["level_id"]; isOneToOne: false; referencedRelation: "school_levels"; referencedColumns: ["id"] }, { foreignKeyName: "school_subject_teachers_teacher_profile_id_fkey"; columns: ["teacher_profile_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
+      };
       school_curriculums: {
         Row: {
           id: string;

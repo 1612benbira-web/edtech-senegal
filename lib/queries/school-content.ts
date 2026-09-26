@@ -34,6 +34,45 @@ export async function getPublishedGlobalCurriculums() {
   return data;
 }
 
+/**
+ * Programmes nationaux publiés, restreints aux matières/niveaux que
+ * `assignments` désigne (cf. requireTeacherAccess, migration 0025) —
+ * utilisé par l'espace enseignant pour qu'un enseignant ne voie jamais
+ * de matière qui ne lui a pas été confiée, même dans un simple sélecteur.
+ * Le filtrage exact par série (quand series_id est renseigné côté
+ * curriculum ET côté affectation) est fait ici en JS : Supabase ne
+ * permet pas facilement un "in" sur des paires de colonnes.
+ */
+export async function getPublishedGlobalCurriculumsForAssignments(
+  assignments: { subject_id: string; level_id: string; series_id: string | null }[]
+) {
+  if (assignments.length === 0) return [];
+  const supabase = await createClient();
+  const subjectIds = [...new Set(assignments.map((a) => a.subject_id))];
+  const levelIds = [...new Set(assignments.map((a) => a.level_id))];
+
+  const { data, error } = await supabase
+    .from("curriculums")
+    .select("id, title, status, level_id, series_id, subject_id, school_levels(name), subjects(name)")
+    .is("school_id", null)
+    .eq("status", "published")
+    .in("subject_id", subjectIds)
+    .in("level_id", levelIds)
+    .order("title");
+  if (error) throw error;
+
+  return (data ?? []).filter((c) =>
+    assignments.some(
+      (a) =>
+        a.subject_id === c.subject_id &&
+        a.level_id === c.level_id &&
+        // Affectation sans série (a.series_id null) = couvre toutes les
+        // séries de ce niveau ; sinon la série doit correspondre.
+        (a.series_id === null || a.series_id === c.series_id)
+    )
+  );
+}
+
 // ============================================================
 // Vérification de propriété — curriculum / chapitre / leçon / exercice.
 //

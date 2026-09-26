@@ -83,6 +83,37 @@ export async function getSchoolMembers(schoolId: string) {
   return data ?? [];
 }
 
+/** Affectations enseignant ↔ matière ↔ niveau d'une école (migration 0025). */
+export async function getSchoolSubjectTeachers(schoolId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("school_subject_teachers")
+    .select(
+      "id, created_at, subjects(id, name), school_levels(id, name), school_series(id, name), profiles(id, first_name, last_name, email)"
+    )
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Les matières/niveaux confiés à l'enseignant connecté pour une école donnée. */
+export async function getMyTeachingAssignments(schoolId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("school_subject_teachers")
+    .select("id, subjects(id, name), school_levels(id, name), school_series(id, name)")
+    .eq("school_id", schoolId)
+    .eq("teacher_profile_id", user.id);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getSchoolCurriculums(schoolId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase

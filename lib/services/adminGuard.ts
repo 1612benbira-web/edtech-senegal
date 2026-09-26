@@ -14,6 +14,13 @@ export class NotSchoolAdminError extends Error {
   }
 }
 
+export class NotTeacherError extends Error {
+  constructor() {
+    super("Action réservée à un enseignant rattaché à cette école.");
+    this.name = "NotTeacherError";
+  }
+}
+
 /**
  * Vérifie que l'utilisateur courant est admin, sinon lève une erreur.
  * La RLS (migration 0009) protège déjà la base en dernier recours,
@@ -76,6 +83,48 @@ export async function requireSchoolAccess(schoolId: string) {
   if (!membership) throw new NotSchoolAdminError();
 
   return { supabase, userId: user.id, isSuperAdmin: false as const };
+}
+
+/**
+ * Vérifie que l'utilisateur courant est un enseignant actif de l'école
+ * `schoolId` (rattachement school_members role='teacher', cf. migration
+ * 0025), et renvoie ses affectations matière/niveau dans cette école.
+ * Contrairement à requireSchoolAccess, le super_admin n'a PAS de bypass
+ * ici : un enseignant est toujours une personne précise, désignée, pas
+ * une casquette du super_admin — s'il veut inspecter le travail d'un
+ * enseignant, il passe par les pages /admin habituelles, pas par
+ * l'espace /teacher.
+ */
+export async function requireTeacherAccess(schoolId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new NotTeacherError();
+
+  const { data: membership } = await supabase
+    .from("school_members")
+    .select("id")
+    .eq("school_id", schoolId)
+    .eq("profile_id", user.id)
+    .eq("role", "teacher")
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!membership) throw new NotTeacherError();
+
+  // La RLS (school_subject_teachers_teacher_select, 0025) garantit déjà
+  // qu'on ne voit que ses propres affectations ; ce filtre explicite
+  // reste utile pour un message d'erreur clair si l'enseignant n'a
+  // encore aucune matière confiée.
+  const { data: assignments } = await supabase
+    .from("school_subject_teachers")
+    .select("id, subject_id, level_id, series_id, subjects(name), school_levels(name), school_series(name)")
+    .eq("school_id", schoolId)
+    .eq("teacher_profile_id", user.id);
+
+  return { supabase, userId: user.id, assignments: assignments ?? [] };
 }
 
 /**

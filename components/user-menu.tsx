@@ -2,13 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { User, BookOpen, Settings, LogOut, ChevronDown } from "lucide-react";
+import { User, BookOpen, Settings, LogOut, ChevronDown, GraduationCap } from "lucide-react";
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-export function UserMenu({ firstName, logoutAction }: { firstName: string; logoutAction: () => void }) {
+export function UserMenu({
+  firstName,
+  logoutAction,
+  isTeacher,
+}: {
+  firstName: string;
+  logoutAction: () => void;
+  // Phase 25 : un compte enseignant reste par ailleurs un compte élève
+  // normal (profiles.role ne change pas) — seul son rattachement
+  // school_members porte role='teacher'. On ajoute juste un accès
+  // supplémentaire vers /teacher, sans transformer le menu existant.
+  isTeacher?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,6 +44,9 @@ export function UserMenu({ firstName, logoutAction }: { firstName: string; logou
           <Link href="/profile" onClick={() => setOpen(false)} role="menuitem" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><User className="h-4 w-4" />Mon profil</Link>
           <Link href="/programme" onClick={() => setOpen(false)} role="menuitem" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><BookOpen className="h-4 w-4" />Mon programme</Link>
           <Link href="/settings" onClick={() => setOpen(false)} role="menuitem" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><Settings className="h-4 w-4" />Paramètres</Link>
+          {isTeacher && (
+            <Link href="/teacher" onClick={() => setOpen(false)} role="menuitem" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><GraduationCap className="h-4 w-4" />Espace enseignant</Link>
+          )}
           <div className="my-1 border-t border-slate-100" />
           <form action={logoutAction}><button type="submit" role="menuitem" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50"><LogOut className="h-4 w-4" />Se déconnecter</button></form>
         </div>
