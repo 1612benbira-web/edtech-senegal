@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Star, Flame, Award, Target, BookOpen, CheckCircle2, ArrowRight, Trophy, ChevronRight, Zap, Medal, Sparkles } from "lucide-react";
+import { Star, Flame, Award, Target, BookOpen, CheckCircle2, ArrowRight, Trophy, ChevronRight, Zap, Medal, Sparkles, ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { startReviewQuizAction, startDailyQuizAction } from "@/app/(app)/quiz/actions";
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
@@ -17,6 +17,20 @@ import { formatNiveauBadge } from "@/lib/utils/niveau";
 export const metadata: Metadata = { title: "Tableau de bord" };
 
 const rankMedals = ["🥇", "🥈", "🥉"];
+
+// Associe la colonne badges.icon (cf. migration 0010_default_badges.sql)
+// à une icône Lucide réellement distincte par badge. Avant ce correctif,
+// la carte "Mes badges" affichait systématiquement <Award /> pour tous
+// les badges, quelle que soit la valeur de icon : la colonne était
+// sélectionnée par la requête mais jamais lue côté rendu.
+const BADGE_ICONS: Record<string, typeof Award> = {
+  "book-open": BookOpen,
+  "clipboard-check": ClipboardCheck,
+  award: Award,
+  target: Target,
+  flame: Flame,
+  star: Star,
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -170,7 +184,7 @@ export default async function DashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(310px,.75fr)]">
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Trophy className="h-5 w-5 text-amber-500" />Top 10 des élèves</h2><p className="mt-1 text-sm text-slate-500">Classement XP des élèves de ton niveau.</p></div>{myRank && myRank > 10 && <Badge variant="primary">Ton classement : #{myRank}</Badge>}</div><div className="mt-5 space-y-2">{leaderboard.length === 0 ? <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Le classement sera disponible dès que des élèves auront gagné de l&apos;XP.</div> : leaderboard.map((entry) => { const isMe = entry.profileId === user!.id; return <div key={entry.profileId} className={`flex items-center gap-3 rounded-2xl px-3 py-3.5 ${isMe ? "bg-emerald-50 ring-1 ring-emerald-100" : "bg-slate-50/70"}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-600 shadow-sm">{entry.rank <= 3 ? rankMedals[entry.rank - 1] : entry.rank}</span><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#064c35] text-[10px] font-bold text-white">{entry.firstName?.[0] ?? "E"}</span><span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{entry.firstName}{entry.lastNameInitial ? ` ${entry.lastNameInitial}` : ""}{isMe ? " · Toi" : ""}</span><span className="font-mono text-xs font-bold text-slate-900">{entry.xpTotal} XP</span><ChevronRight className="h-4 w-4 text-slate-300" /></div> })}</div></section>
 
-        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Medal className="h-5 w-5 text-emerald-600" />Mes badges</h2><p className="mt-1 text-sm text-slate-500">Tes récompenses pour tes progrès.</p></div>{earnedBadges.length > 0 ? <div className="mt-5 grid grid-cols-2 gap-3">{earnedBadges.slice(0, 6).map((b: any) => <div key={b.badges.code} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3" title={b.badges.description ?? undefined}><div className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-500"><Award className="h-5 w-5" /></div><p className="mt-2 truncate text-xs font-bold text-slate-900">{b.badges.name}</p><p className="mt-1 line-clamp-1 text-[10px] text-slate-500">{b.badges.description}</p></div>)}</div> : <div className="mt-5 rounded-2xl bg-slate-50 p-8 text-center"><Zap className="mx-auto h-6 w-6 text-amber-500" /><p className="mt-2 text-sm font-semibold text-slate-800">Tes premiers badges arrivent bientôt.</p><p className="mt-1 text-xs text-slate-500">Continue à apprendre pour débloquer des récompenses.</p></div>}</section>
+        <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div><h2 className="flex items-center gap-2 font-display text-xl font-bold text-slate-950"><Medal className="h-5 w-5 text-emerald-600" />Mes badges</h2><p className="mt-1 text-sm text-slate-500">Tes récompenses pour tes progrès.</p></div>{earnedBadges.length > 0 ? <div className="mt-5 grid grid-cols-2 gap-3">{earnedBadges.slice(0, 6).map((b: any) => { const BadgeIcon = BADGE_ICONS[b.badges.icon as string] ?? Award; return <div key={b.badges.code} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3" title={b.badges.description ?? undefined}><div className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-500"><BadgeIcon className="h-5 w-5" /></div><p className="mt-2 truncate text-xs font-bold text-slate-900">{b.badges.name}</p><p className="mt-1 line-clamp-1 text-[10px] text-slate-500">{b.badges.description}</p></div> })}</div> : <div className="mt-5 rounded-2xl bg-slate-50 p-8 text-center"><Zap className="mx-auto h-6 w-6 text-amber-500" /><p className="mt-2 text-sm font-semibold text-slate-800">Tes premiers badges arrivent bientôt.</p><p className="mt-1 text-xs text-slate-500">Continue à apprendre pour débloquer des récompenses.</p></div>}</section>
       </div>
     </div>
   );
