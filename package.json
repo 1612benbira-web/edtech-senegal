@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "typecheck:worker": "tsc --noEmit -p tsconfig.worker.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > lib/types/database.ts",
@@ -36,6 +37,7 @@
     "db:audit:6e-anglais-histoire-geo": "tsx scripts/audit-6e-anglais-histoire-geo.ts"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.13",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.112.4",
     "class-variance-authority": "^0.7.0",
@@ -49,6 +51,7 @@
     "react-markdown": "^9.0.1",
     "rehype-katex": "^7.0.0",
     "remark-math": "^6.0.0",
+    "serwist": "^9.5.13",
     "tailwind-merge": "^2.5.0",
     "zod": "^3.23.0"
   },

@@ -28,5 +28,4 @@ values (
 on conflict (school_id, profile_id) do update set status = 'active', role = excluded.role;
 
 -- 4. Si tu veux aussi remettre profiles.role à sa valeur d'origine
---    (ex: repasser un compte de 'school_admin' à 'student') :
--- update profiles set role = 'student' where email = 'TON_EMAIL_ICI';
+--    (ex: repasser un compte de 'school_admin' à 'st 

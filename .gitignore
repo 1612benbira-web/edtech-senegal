@@ -6,3 +6,10 @@ node_modules/
 *.tsbuildinfo
 coverage/
 .vercel/
+
+# Généré au build par Serwist (next.config.js, swDest) — ne pas committer,
+# comme .next/ : c'est un artefact de build, pas du code source.
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/swe-worker-*.js.map

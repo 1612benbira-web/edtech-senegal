@@ -20,5 +20,9 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // app/sw.ts (le service worker Serwist) a besoin de la lib "webworker"
+  // (types ServiceWorkerGlobalScope, etc.), incompatible avec "dom" utilisé
+  // ici par le reste de l'appli. Il est donc exclu de ce tsconfig et vérifié
+  // séparément via tsconfig.worker.json (voir `npm run type-check:worker`).
+  "exclude": ["node_modules", "app/sw.ts"]
 }

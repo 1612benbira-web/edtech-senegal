@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Sora, Work_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -27,6 +27,24 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Plateforme éducative — Programme sénégalais",
   description: "Apprendre selon le programme sénégalais. Réviser chaque jour. Progresser à son rythme.",
+  // app/icon.png et app/apple-icon.png (convention Next.js App Router)
+  // fournissent déjà le favicon et l'icône iOS automatiquement, sans rien
+  // à déclarer ici. app/manifest.ts est de même auto-détecté.
+  appleWebApp: {
+    // "standalone" (plutôt que "default") : la barre d'adresse Safari
+    // disparaît une fois l'appli ajoutée à l'écran d'accueil iOS, pour
+    // un rendu vraiment "application" plutôt que "onglet épinglé".
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "EdTech Sénégal",
+  },
+};
+
+// Séparé de `metadata` depuis Next.js 14 : themeColor et colorScheme sont
+// désormais exposés via `viewport`, pas `metadata` (l'ancien emplacement
+// est déprécié mais fonctionne encore avec un avertissement).
+export const viewport: Viewport = {
+  themeColor: "#063f2d",
 };
 
 export default function RootLayout({
