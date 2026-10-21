@@ -62,13 +62,27 @@ export function OnboardingForm({
 
   /*
    * Matières disponibles pour le niveau + série.
+   *
+   * Une matière peut avoir DEUX lignes level_subjects pour le même niveau
+   * (une commune à toutes les séries avec series_id=null, et une propre à
+   * la série sélectionnée) : sans dédoublonnage par subject_id, elle
+   * apparaissait deux fois dans la liste. On ne garde qu'une ligne par
+   * matière, en préférant la ligne spécifique à la série sélectionnée.
    */
   const availableSubjects = useMemo(() => {
-    return levelSubjects.filter(
+    const matching = levelSubjects.filter(
       (ls) =>
         ls.level_id === selectedLevel &&
         (ls.series_id === null || ls.series_id === selectedSeries)
     );
+    const dedupedBySubject = new Map<string, LevelSubject>();
+    for (const ls of matching) {
+      const existing = dedupedBySubject.get(ls.subject_id);
+      if (!existing || (existing.series_id === null && ls.series_id !== null)) {
+        dedupedBySubject.set(ls.subject_id, ls);
+      }
+    }
+    return Array.from(dedupedBySubject.values());
   }, [levelSubjects, selectedLevel, selectedSeries]);
 
   return (

@@ -91,7 +91,23 @@ export default async function DashboardPage() {
   ]);
 
   const enrolledSubjectIds = new Set(programmes.map((p) => p.subjectId));
-  const availableSubjects = (availableLevelSubjects ?? []).filter((item: any) => (item.series_id === null || item.series_id === profile.series_id) && !enrolledSubjectIds.has(item.subject_id));
+  // Une matière peut avoir DEUX lignes level_subjects pour le même niveau
+  // (une commune à toutes les séries avec series_id=null, et une propre à
+  // la série de l'élève) : sans dédoublonnage par subject_id, elle
+  // apparaissait deux fois dans "Ajouter un programme". On ne garde
+  // qu'une ligne par matière, en préférant la ligne spécifique à la série
+  // de l'élève si elle existe.
+  const matchingLevelSubjects = (availableLevelSubjects ?? []).filter(
+    (item: any) => (item.series_id === null || item.series_id === profile.series_id) && !enrolledSubjectIds.has(item.subject_id)
+  );
+  const dedupedBySubject = new Map<string, any>();
+  for (const item of matchingLevelSubjects) {
+    const existing = dedupedBySubject.get(item.subject_id);
+    if (!existing || (existing.series_id === null && item.series_id !== null)) {
+      dedupedBySubject.set(item.subject_id, item);
+    }
+  }
+  const availableSubjects = Array.from(dedupedBySubject.values());
   const totalLessonsDone = programmes.reduce((sum, p) => sum + p.completedLessons, 0);
   // Avant : `programmes.find((program) => program.nextLessonId)` prenait la
   // PREMIÈRE matière de la liste (ordre d'inscription de l'élève, pas
@@ -132,7 +148,13 @@ export default async function DashboardPage() {
               </p>
             )}
             <p className="mt-2 max-w-lg text-sm leading-6 text-emerald-50/70">Continue ton apprentissage là où tu t&apos;es arrêté et garde ton rythme.</p>
-            {nextLesson && <Link href={`/lesson/${nextLesson}`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#064c35] transition hover:bg-emerald-50 dark:bg-white dark:text-[#064c35]"><span>Continuer l&apos;apprentissage</span><ArrowRight className="h-4 w-4" /></Link>}
+            {/* Couleurs volontairement hors de la palette blanc/slate/emerald :
+                globals.css redéfinit globalement .dark .bg-white (pensé pour
+                les cartes, pas pour ce bouton) vers un fond sombre, ce qui
+                laissait un texte vert foncé illisible sur fond sombre en
+                thème sombre. L'ambre de la marque n'est touché par aucune
+                règle .dark, donc le contraste reste fort dans les deux thèmes. */}
+            {nextLesson && <Link href={`/lesson/${nextLesson}`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-[#063f2d] transition hover:bg-amber-300"><span>Continuer l&apos;apprentissage</span><ArrowRight className="h-4 w-4" /></Link>}
           </div>
           <div className="flex min-w-[270px] items-center gap-5 rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[5px] border-amber-300/90 bg-[#063f2d] shadow-[0_0_35px_-12px_rgba(245,197,66,.9)]"><span className="text-center"><span className="block text-[9px] font-bold uppercase tracking-widest text-amber-200">Niveau</span><span className="block font-display text-3xl font-bold">{levelNumber}</span></span></div>
