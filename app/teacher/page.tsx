@@ -17,7 +17,7 @@ export default async function TeacherOverviewPage() {
       <AdminPageHeader
         icon={GraduationCap}
         title="Tes matières"
-        description="Pour chaque matière/niveau qui t'est confié, tu peux consulter le cours national (lecture seule), ajouter tes propres exercices, et écrire aux élèves de ce niveau."
+        description="Pour chaque matière/niveau qui t'est confié, tu peux consulter le cours national (lecture seule), modifier les cours propres à ton école, ajouter tes propres exercices, et écrire aux élèves de ce niveau."
       />
 
       <AdminSection title={`Affectations (${assignments.length})`}>

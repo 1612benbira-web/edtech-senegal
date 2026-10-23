@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, Dumbbell, MessageSquare, LogOut } from "lucide-react";
+import { GraduationCap, BookOpen, Dumbbell, MessageSquare, LogOut } from "lucide-react";
 import { getCurrentSchool } from "@/lib/services/schoolService";
 import { logoutAction } from "../(auth)/actions";
 
@@ -19,6 +19,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
 
   const tabs = [
     { href: "/teacher", label: "Aperçu", icon: GraduationCap },
+    { href: "/teacher/courses", label: "Mes cours", icon: BookOpen },
     { href: "/teacher/exercises", label: "Mes exercices", icon: Dumbbell },
     { href: "/teacher/messages", label: "Messages", icon: MessageSquare },
   ];
