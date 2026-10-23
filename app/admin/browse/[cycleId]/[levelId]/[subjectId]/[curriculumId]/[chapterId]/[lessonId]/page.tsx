@@ -7,18 +7,19 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { StatusBadge } from "@/components/admin/browse/browse-card";
 import { BrowseBreadcrumb } from "@/components/admin/browse/breadcrumb";
 
-export default async function BrowseLessonDetailPage({
-  params,
-}: {
-  params: {
-    cycleId: string;
-    levelId: string;
-    subjectId: string;
-    curriculumId: string;
-    chapterId: string;
-    lessonId: string;
-  };
-}) {
+export default async function BrowseLessonDetailPage(
+  props: {
+    params: Promise<{
+      cycleId: string;
+      levelId: string;
+      subjectId: string;
+      curriculumId: string;
+      chapterId: string;
+      lessonId: string;
+    }>;
+  }
+) {
+  const params = await props.params;
   await requireAdmin();
   const lesson = await getLessonMeta(params.lessonId);
   if (!lesson) notFound();

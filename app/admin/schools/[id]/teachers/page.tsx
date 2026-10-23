@@ -11,7 +11,8 @@ import { AdminForm } from "@/components/admin/admin-form";
 import { TeacherAssignmentActions } from "@/components/admin/teacher-assignment-actions";
 import { assignTeacherAction } from "./actions";
 
-export default async function SchoolTeachersPage({ params }: { params: { id: string } }) {
+export default async function SchoolTeachersPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSchoolAccess(params.id);
 
   const school = await getSchoolById(params.id);

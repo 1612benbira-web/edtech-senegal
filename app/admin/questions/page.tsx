@@ -30,11 +30,12 @@ const ANSWER_FORMAT_HELP = `Format selon le type choisi :
 • Association : une paire par ligne, "gauche => droite"
 • Ordonnancement : les éléments un par ligne, dans le bon ordre`;
 
-export default async function QuestionsAdminPage({
-  searchParams,
-}: {
-  searchParams: { curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string };
-}) {
+export default async function QuestionsAdminPage(
+  props: {
+    searchParams: Promise<{ curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const curriculums = await getAllCurriculums();
   const selectedCurriculumId = searchParams.curriculumId ?? curriculums[0]?.id;
 

@@ -7,7 +7,8 @@ import { getPresence } from "@/lib/utils/presence";
 import { PresenceBadge, StudentRowActions } from "@/components/admin/student-row-actions";
 import { Card, MetricCard } from "@/components/ui/card";
 
-export default async function StudentDetailPage({ params }: { params: { id: string } }) {
+export default async function StudentDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const student = await getStudentDetail(params.id);
   if (!student) notFound();
 

@@ -7,11 +7,12 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { BrowseGrid, BrowseCard, BrowseEmptyState } from "@/components/admin/browse/browse-card";
 import { BrowseBreadcrumb } from "@/components/admin/browse/breadcrumb";
 
-export default async function BrowseLessonsPage({
-  params,
-}: {
-  params: { cycleId: string; levelId: string; subjectId: string; curriculumId: string; chapterId: string };
-}) {
+export default async function BrowseLessonsPage(
+  props: {
+    params: Promise<{ cycleId: string; levelId: string; subjectId: string; curriculumId: string; chapterId: string }>;
+  }
+) {
+  const params = await props.params;
   await requireAdmin();
   const chapter = await getChapterMeta(params.chapterId);
   if (!chapter) notFound();

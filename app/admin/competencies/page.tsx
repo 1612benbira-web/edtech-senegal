@@ -12,11 +12,12 @@ import { CurriculumSelector } from "@/components/admin/curriculum-selector";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminSection } from "@/components/admin/admin-section";
 
-export default async function CompetenciesAdminPage({
-  searchParams,
-}: {
-  searchParams: { curriculumId?: string };
-}) {
+export default async function CompetenciesAdminPage(
+  props: {
+    searchParams: Promise<{ curriculumId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const curriculums = await getAllCurriculums();
   const selectedCurriculumId = searchParams.curriculumId ?? curriculums[0]?.id;
 

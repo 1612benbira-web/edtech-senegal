@@ -9,11 +9,12 @@ import { CompleteLessonButton } from "../complete-lesson-button";
 import { getMyProgramme } from "@/lib/queries/programme";
 import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
 
-export default async function LessonPage({
-  params,
-}: {
-  params: { lessonId: string };
-}) {
+export default async function LessonPage(
+  props: {
+    params: Promise<{ lessonId: string }>;
+  }
+) {
+  const params = await props.params;
   const lesson = await getPublishedLessonById(params.lessonId);
   if (!lesson) notFound();
 

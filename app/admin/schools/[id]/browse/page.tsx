@@ -14,7 +14,8 @@ import { BrowseGrid, BrowseCard, BrowseEmptyState } from "@/components/admin/bro
  * privé d'une autre école (cf. getSubjectsOverviewForLevel(levelId,
  * schoolId) dans lib/queries/library.ts, et la RLS en dernier rempart).
  */
-export default async function SchoolBrowseCyclesPage({ params }: { params: { id: string } }) {
+export default async function SchoolBrowseCyclesPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSchoolAccess(params.id);
   const school = await getSchoolById(params.id);
   if (!school) notFound();

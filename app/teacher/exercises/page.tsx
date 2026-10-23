@@ -33,11 +33,12 @@ const ANSWER_FORMAT_HELP = `Format selon le type choisi :
 • Association : une paire par ligne, "gauche => droite"
 • Ordonnancement : les éléments un par ligne, dans le bon ordre`;
 
-export default async function TeacherExercisesPage({
-  searchParams,
-}: {
-  searchParams: { curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string };
-}) {
+export default async function TeacherExercisesPage(
+  props: {
+    searchParams: Promise<{ curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const currentSchool = await getCurrentSchool();
   const schoolId = currentSchool!.schoolId;
   const { assignments } = await requireTeacherAccess(schoolId);

@@ -8,11 +8,12 @@ import { createClient } from "@/lib/supabase/server";
 import { startChapterQuizAction } from "@/app/(app)/quiz/actions";
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 
-export default async function ChapterPage({
-  params,
-}: {
-  params: { subject: string; chapter: string };
-}) {
+export default async function ChapterPage(
+  props: {
+    params: Promise<{ subject: string; chapter: string }>;
+  }
+) {
+  const params = await props.params;
   const chapter = await getChapterById(params.chapter);
   if (!chapter) notFound();
 

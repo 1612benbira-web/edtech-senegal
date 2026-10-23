@@ -3,7 +3,8 @@ import { ForgotPasswordForm } from "./forgot-password-form";
 
 export const metadata: Metadata = { title: "Mot de passe oublié" };
 
-export default function ForgotPasswordPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function ForgotPasswordPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const errorMessage = searchParams.error === "recovery"
     ? "Le lien de récupération est expiré ou a déjà été utilisé. Demande un nouveau lien pour continuer."
     : searchParams.error === "missing-code"

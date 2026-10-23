@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { useFormState } from "react-dom";
 import { resetPasswordAction, type AuthActionState } from "../actions";
 import { Input } from "@/components/ui/input";
 import { Label, FieldError } from "@/components/ui/label";
@@ -19,7 +18,7 @@ function passwordStrength(password: string) {
 }
 
 export function ResetPasswordForm() {
-  const [state, formAction] = useFormState<AuthActionState, FormData>(resetPasswordAction, null);
+  const [state, formAction] = useActionState<AuthActionState, FormData>(resetPasswordAction, null);
   const [visible, setVisible] = useState(false);
   const [password, setPassword] = useState("");
   const strength = passwordStrength(password);

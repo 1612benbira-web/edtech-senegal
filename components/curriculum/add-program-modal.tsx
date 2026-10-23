@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useState, useActionState } from "react";
 import { Plus, X } from "lucide-react";
 import { addSubjectsToProgrammeAction, type ProgrammeActionState } from "@/app/(app)/dashboard/learning-actions";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -15,7 +14,7 @@ interface AvailableSubject {
 
 export function AddProgramModal({ availableSubjects }: { availableSubjects: AvailableSubject[] }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useFormState<ProgrammeActionState, FormData>(
+  const [state, formAction] = useActionState<ProgrammeActionState, FormData>(
     addSubjectsToProgrammeAction,
     null
   );

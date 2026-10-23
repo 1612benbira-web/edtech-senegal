@@ -14,7 +14,8 @@ const ROLE_LABELS: Record<string, string> = {
   school_admin: "Administrateur d'école",
 };
 
-export default async function SchoolMembersPage({ params }: { params: { id: string } }) {
+export default async function SchoolMembersPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSchoolAccess(params.id);
 
   const school = await getSchoolById(params.id);

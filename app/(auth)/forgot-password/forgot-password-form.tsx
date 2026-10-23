@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { useEffect, useState, useActionState } from "react";
 import Link from "next/link";
 import { forgotPasswordAction, verifyPhoneRecoveryAction, type AuthActionState } from "../actions";
 import { Input } from "@/components/ui/input";
@@ -8,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 export function ForgotPasswordForm() {
   const [identifier, setIdentifier] = useState("");
-  const [state, formAction] = useFormState<AuthActionState, FormData>(forgotPasswordAction, null);
-  const [verifyState, verifyAction] = useFormState<AuthActionState, FormData>(verifyPhoneRecoveryAction, null);
+  const [state, formAction] = useActionState<AuthActionState, FormData>(forgotPasswordAction, null);
+  const [verifyState, verifyAction] = useActionState<AuthActionState, FormData>(verifyPhoneRecoveryAction, null);
   const phoneStep = state?.next === "phone" && !!state.phone;
   useEffect(() => { if (state?.success && !phoneStep) setIdentifier(""); }, [state?.success, phoneStep]);
   return (

@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useFormState } from "react-dom";
+import { useMemo, useState, useActionState } from "react";
 import { AlertCircle, User } from "lucide-react";
 
 import { completeOnboardingAction } from "./actions";
@@ -41,7 +40,7 @@ export function OnboardingForm({
   series: Series[];
   levelSubjects: LevelSubject[];
 }) {
-  const [state, formAction] = useFormState<ActionState, FormData>(
+  const [state, formAction] = useActionState<ActionState, FormData>(
     completeOnboardingAction,
     null
   );

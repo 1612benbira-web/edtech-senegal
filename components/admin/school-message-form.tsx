@@ -1,7 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
-import { useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Image as ImageIcon, Video, FileText, X } from "lucide-react";
 import { createSchoolMessageAction, type MessageActionState } from "@/app/admin/schools/[id]/messages/actions";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -28,7 +27,7 @@ export function SchoolMessageForm({
   levels: { id: string; name: string; studentCount: number }[];
   totalStudents: number;
 }) {
-  const [state, formAction] = useFormState<MessageActionState, FormData>(createSchoolMessageAction, null);
+  const [state, formAction] = useActionState<MessageActionState, FormData>(createSchoolMessageAction, null);
   const [targetType, setTargetType] = useState<"SCHOOL" | "LEVEL">("SCHOOL");
   const [levelId, setLevelId] = useState("");
   const [files, setFiles] = useState<File[]>([]);

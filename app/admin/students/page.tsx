@@ -9,11 +9,12 @@ import { requireAnyAdminAccess } from "@/lib/services/adminGuard";
 
 const PAGE_SIZE = 25;
 
-export default async function StudentsAdminPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; page?: string };
-}) {
+export default async function StudentsAdminPage(
+  props: {
+    searchParams: Promise<{ q?: string; page?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   // Cette page liste les élèves de TOUTES les écoles : réservée au
   // super_admin. Un school_admin dispose de sa propre page dédiée
   // (/admin/schools/[id]/members), scopée à sa seule école par la RLS.

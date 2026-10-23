@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { LogOut } from "lucide-react";
 import { forceLogoutStudentAction } from "@/app/admin/students/actions";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -20,7 +20,7 @@ export function PresenceBadge({ status, label }: { status: PresenceStatus; label
 }
 
 export function StudentRowActions({ studentId }: { studentId: string }) {
-  const [state, formAction] = useFormState(forceLogoutStudentAction, null);
+  const [state, formAction] = useActionState(forceLogoutStudentAction, null);
 
   return (
     <div className="flex flex-col items-end gap-1">

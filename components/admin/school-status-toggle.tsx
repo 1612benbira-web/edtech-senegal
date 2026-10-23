@@ -1,7 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
-import { useRef } from "react";
+import { useActionState, useRef } from "react";
 import { updateSchoolStatusAction } from "@/app/admin/schools/actions";
 
 export function SchoolStatusToggle({
@@ -11,7 +10,7 @@ export function SchoolStatusToggle({
   schoolId: string;
   currentStatus: "active" | "inactive";
 }) {
-  const [state, formAction] = useFormState(updateSchoolStatusAction, null);
+  const [state, formAction] = useActionState(updateSchoolStatusAction, null);
   const formRef = useRef<HTMLFormElement>(null);
   const nextStatus = currentStatus === "active" ? "inactive" : "active";
 

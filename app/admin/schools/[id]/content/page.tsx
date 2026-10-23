@@ -44,13 +44,14 @@ const ANSWER_FORMAT_HELP = `Format selon le type choisi :
 • Association : une paire par ligne, "gauche => droite"
 • Ordonnancement : les éléments un par ligne, dans le bon ordre`;
 
-export default async function SchoolContentPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string };
-}) {
+export default async function SchoolContentPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSchoolAccess(params.id);
   const schoolId = params.id;
 

@@ -11,7 +11,8 @@ const TYPE_LABELS: Record<string, string> = {
   daily: "Quiz du jour",
 };
 
-export default async function QuizPage({ params }: { params: { quizId: string } }) {
+export default async function QuizPage(props: { params: Promise<{ quizId: string }> }) {
+  const params = await props.params;
   const supabase = await createClient();
   const {
     data: { user },
