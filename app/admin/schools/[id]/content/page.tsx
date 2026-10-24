@@ -205,7 +205,10 @@ export default async function SchoolContentPage(
                       currentStatus={c.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolCurriculumAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolCurriculumAction(id, schoolId);
+                      }}
                       id={c.id}
                       confirmMessage={`Supprimer le programme "${c.title}" et tout son contenu (chapitres, leçons, exercices) ?`}
                     />
@@ -255,7 +258,10 @@ export default async function SchoolContentPage(
                       currentStatus={ch.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolChapterAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolChapterAction(id, schoolId);
+                      }}
                       id={ch.id}
                       confirmMessage={`Supprimer le chapitre "${ch.title}" ?`}
                     />
@@ -312,7 +318,10 @@ export default async function SchoolContentPage(
                       currentStatus={l.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolLessonAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolLessonAction(id, schoolId);
+                      }}
                       id={l.id}
                       confirmMessage={`Supprimer la leçon "${l.title}" ?`}
                     />
@@ -373,7 +382,10 @@ export default async function SchoolContentPage(
                       currentStatus={ex.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolExerciseAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolExerciseAction(id, schoolId);
+                      }}
                       id={ex.id}
                       confirmMessage={`Supprimer l'exercice "${ex.title}" ?`}
                     />
@@ -445,7 +457,10 @@ export default async function SchoolContentPage(
                       currentStatus={q.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolQuestionAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolQuestionAction(id, schoolId);
+                      }}
                       id={q.id}
                       confirmMessage="Supprimer cette question ?"
                     />

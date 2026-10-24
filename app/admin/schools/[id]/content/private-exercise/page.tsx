@@ -178,7 +178,10 @@ export default async function SchoolPrivateExercisePage(
                       currentStatus={ex.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolExerciseAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolExerciseAction(id, schoolId);
+                      }}
                       id={ex.id}
                       confirmMessage={`Supprimer l'exercice privé "${ex.title}" ?`}
                     />
@@ -252,7 +255,10 @@ export default async function SchoolPrivateExercisePage(
                       currentStatus={q.status}
                     />
                     <DeleteButton
-                      action={(id) => deleteSchoolQuestionAction(id, schoolId)}
+                      action={async (id: string) => {
+                        "use server";
+                        return deleteSchoolQuestionAction(id, schoolId);
+                      }}
                       id={q.id}
                       confirmMessage="Supprimer cette question ?"
                     />
