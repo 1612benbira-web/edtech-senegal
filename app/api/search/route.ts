@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { LIMITS, rateLimit } from "@/lib/security/rate-limit";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,14 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
+  const limited = await rateLimit("search:user", user.id, LIMITS.searchUser);
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Trop de recherches, réessaie dans un instant." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+    );
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id, series_id")
@@ -30,8 +41,11 @@ export async function GET(request: Request) {
   if (!profile?.level_id) return NextResponse.json({ results: [] });
 
   const pattern = `%${query.replace(/[%_]/g, "\\$&")}%`;
-  const seriesFilter = profile.series_id
-    ? `series_id.is.null,series_id.eq.${profile.series_id}`
+  // L'identifiant de série est interpolé dans un filtre PostgREST (.or) : on
+  // n'accepte qu'un vrai UUID, jamais une chaîne arbitraire.
+  const seriesId = profile.series_id && UUID_RE.test(profile.series_id) ? profile.series_id : null;
+  const seriesFilter = seriesId
+    ? `series_id.is.null,series_id.eq.${seriesId}`
     : "series_id.is.null";
 
   // We deliberately filter related records in JavaScript instead of relying on
