@@ -40,3 +40,17 @@ export function teacherCurriculumAccess(
   if (curriculum.school_id === null && curriculum.status === "published") return "read";
   return "none";
 }
+
+/**
+ * Statuts qu'un enseignant peut donner à ses chapitres/leçons. « published »
+ * (et « validated ») sont réservés au responsable d'établissement : voir le
+ * trigger restrict_teacher_publication (migration 0029), qui est le vrai rempart.
+ */
+export const TEACHER_ALLOWED_STATUSES = ["draft", "review", "archived"] as const;
+
+export function canTeacherSetStatus(status: string): boolean {
+  return (TEACHER_ALLOWED_STATUSES as readonly string[]).includes(status);
+}
+
+export const PUBLICATION_RESERVED_MESSAGE =
+  "Seul le responsable de l'établissement peut publier un contenu. Passe-le en « révision » pour en demander la publication.";

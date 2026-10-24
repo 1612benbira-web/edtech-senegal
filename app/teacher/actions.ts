@@ -31,13 +31,13 @@ function basePath() {
 }
 
 // ============================================================
-// EXERCICES PRIVÉS — un enseignant ne crée QUE des exercices sur des
-// leçons du programme national (school_id = null), jamais sur un
-// programme déjà propre à une école (cf. décision du porteur de
-// projet). La RLS (exercises_teacher_manage, migration 0025) est le
-// vrai rempart : elle vérifie que la leçon appartient bien à la
-// matière/niveau affectés à CET enseignant. Les contrôles ci-dessous
-// ne servent qu'à renvoyer un message clair avant d'aller jusque-là.
+// EXERCICES PRIVÉS — un enseignant crée des exercices sur les leçons du
+// programme national OU d'un programme propre à SON école (migration 0029),
+// jamais sur celles d'une autre école. La RLS (exercises_teacher_manage +
+// is_assigned_teacher_for_lesson) est le vrai rempart : elle vérifie que la
+// leçon relève d'une matière/niveau affectés à CET enseignant, dans une école
+// dont il est membre actif. Les contrôles ci-dessous ne servent qu'à renvoyer
+// un message clair avant d'aller jusque-là.
 // ============================================================
 
 export async function createTeacherExerciseAction(
@@ -59,8 +59,8 @@ export async function createTeacherExerciseAction(
     const d = parsed.data!;
 
     const lessonOwnerSchoolId = await getLessonOwnerSchoolId(d.lessonId);
-    if (lessonOwnerSchoolId !== null) {
-      return { error: "Tu ne peux ajouter un exercice que sur une leçon du programme national." };
+    if (lessonOwnerSchoolId !== null && lessonOwnerSchoolId !== schoolId) {
+      return { error: "Tu ne peux ajouter un exercice que sur une leçon du programme national ou de ton établissement." };
     }
 
     const { error } = await supabase.from("exercises").insert({

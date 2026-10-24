@@ -1,7 +1,8 @@
 import { Dumbbell, HelpCircle } from "lucide-react";
 import { getCurrentSchool } from "@/lib/services/schoolService";
 import { requireTeacherAccess } from "@/lib/services/adminGuard";
-import { getPublishedGlobalCurriculumsForAssignments, getQuestionsForExerciseScoped } from "@/lib/queries/school-content";
+import { getQuestionsForExerciseScoped } from "@/lib/queries/school-content";
+import { getTeacherCurricula, getChaptersWithLessons } from "@/lib/queries/teacher-courses";
 import { getPublishedChapters } from "@/lib/queries/curriculums-detail";
 import { getPublishedLessonsForChapter } from "@/lib/queries/lessons";
 import { getExercisesForLesson } from "@/lib/queries/exercises";
@@ -43,22 +44,38 @@ export default async function TeacherExercisesPage(
   const schoolId = currentSchool!.schoolId;
   const { assignments } = await requireTeacherAccess(schoolId);
 
-  // Ne montre QUE les programmes correspondant à une matière/niveau
-  // confiée à cet enseignant — jamais l'intégralité du catalogue
-  // national (cf. getPublishedGlobalCurriculumsForAssignments, qui
-  // filtre déjà par assignments ; la RLS sur exercises/questions reste
-  // de toute façon le vrai rempart si cette page laissait passer autre
-  // chose).
-  const curriculums = await getPublishedGlobalCurriculumsForAssignments(
+  // Ne montre QUE les programmes correspondant à une matière/niveau confiée à
+  // cet enseignant : ceux de SON école (toutes leçons, brouillons compris) et
+  // le programme national publié. Jamais l'intégralité du catalogue, jamais un
+  // programme d'une autre école (getTeacherCurricula applique la même règle de
+  // portée que la RLS ; la RLS sur exercises/questions reste le vrai rempart).
+  const { owned, national } = await getTeacherCurricula(
+    schoolId,
     assignments.map((a: any) => ({ subject_id: a.subject_id, level_id: a.level_id, series_id: a.series_id }))
   );
+  const curriculums = [
+    ...owned.map((c: any) => ({ ...c, title: `École — ${c.title}` })),
+    ...national.map((c: any) => ({ ...c, title: `National — ${c.title}` })),
+  ];
 
-  const selectedCurriculumId = searchParams.curriculumId ?? (curriculums as any[])[0]?.id;
-  const chapters = selectedCurriculumId ? await getPublishedChapters(selectedCurriculumId) : [];
-  const selectedChapterId = searchParams.chapterId ?? (chapters as any[])[0]?.id;
+  // L'id vient de l'URL : il doit figurer dans la liste autorisée ci-dessus.
+  const selectedCurriculumId =
+    curriculums.find((c: any) => c.id === searchParams.curriculumId)?.id ?? curriculums[0]?.id;
+  const isOwnedCurriculum = owned.some((c: any) => c.id === selectedCurriculumId);
 
-  const lessons = selectedChapterId ? await getPublishedLessonsForChapter(selectedChapterId) : [];
-  const selectedLessonId = searchParams.lessonId ?? (lessons as any[])[0]?.id;
+  const chapters: any[] = selectedCurriculumId
+    ? isOwnedCurriculum
+      ? await getChaptersWithLessons(selectedCurriculumId, true)
+      : await getPublishedChapters(selectedCurriculumId)
+    : [];
+  const selectedChapterId = chapters.find((c) => c.id === searchParams.chapterId)?.id ?? chapters[0]?.id;
+
+  const lessons: any[] = selectedChapterId
+    ? isOwnedCurriculum
+      ? (chapters.find((c) => c.id === selectedChapterId)?.lessons ?? [])
+      : await getPublishedLessonsForChapter(selectedChapterId)
+    : [];
+  const selectedLessonId = lessons.find((l) => l.id === searchParams.lessonId)?.id ?? lessons[0]?.id;
 
   const lesson = (lessons as any[]).find((l) => l.id === selectedLessonId);
 
@@ -90,13 +107,13 @@ export default async function TeacherExercisesPage(
       <AdminPageHeader
         icon={Dumbbell}
         title="Mes exercices"
-        description="Ajoute tes propres exercices et quiz sur les leçons du programme national, visibles uniquement par les élèves de ton école. Tu ne peux jamais modifier la leçon elle-même."
+        description="Ajoute tes propres exercices et quiz sur les leçons du programme national ou des programmes de ton école, visibles uniquement par les élèves de ton école. Les leçons se modifient dans « Mes cours »."
       />
 
       {curriculums.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Aucune matière ne t&apos;a encore été confiée, ou le programme national correspondant n&apos;est pas
-          encore publié.
+          Aucune matière ne t&apos;a encore été confiée, ou aucun programme (national publié, ou propre à ton
+          école) ne correspond encore à tes matières.
         </p>
       ) : (
         <>
