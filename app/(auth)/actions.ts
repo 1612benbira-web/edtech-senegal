@@ -17,6 +17,9 @@ function normalizePhone(value: string) {
   return null;
 }
 
+type AdminClient = ReturnType<typeof createServiceRoleClient>;
+type CreatedUser = { id: string; created_at?: string };
+
 export async function registerAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const ip = await getClientIp();
   const limited = await enforce([{ scope: "register:ip", identifier: ip, rule: LIMITS.registerIp }]);
@@ -30,50 +33,110 @@ export async function registerAction(_prev: AuthActionState, formData: FormData)
   if (rawPhone && !phone) return { fieldErrors: { phone: "Numéro invalide. Exemple : +221 77 123 45 67." } };
 
   // Le code établissement est optionnel : un compte peut être créé sans
-  // école (compatibilité — voir CORRECTIONS multi-écoles) et rattaché
-  // plus tard. S'il est fourni, on le valide AVANT de créer le compte
-  // pour ne jamais laisser un utilisateur "orphelin" d'une erreur de saisie.
+  // école et rattaché plus tard. S'il est fourni, on le valide AVANT de créer
+  // le compte pour ne jamais laisser un utilisateur "orphelin" d'une erreur de saisie.
   const rawSchoolCode = String(parsed.data.schoolCode || "").trim();
-  let school: { id: string; name: string; code: string; status: string } | null = null;
   if (rawSchoolCode) {
-    school = await getSchoolByCode(rawSchoolCode);
+    const school = await getSchoolByCode(rawSchoolCode);
     if (!school || school.status !== "active") {
       return { fieldErrors: { schoolCode: "Code établissement introuvable ou inactif. Vérifie-le auprès de ton école, ou laisse ce champ vide." } };
     }
   }
 
+  // Inscription ATOMIQUE du point de vue de l'élève : tout ou rien.
+  // Le client service_role est indispensable pour finaliser le compte ; on le
+  // crée AVANT d'ouvrir quoi que ce soit, pour échouer proprement s'il manque.
+  let admin: AdminClient;
+  try {
+    admin = createServiceRoleClient();
+  } catch (e) {
+    console.error("[register] service_role indisponible:", (e as Error).message);
+    return { error: "Inscription momentanément indisponible. Réessaie plus tard." };
+  }
+
+  // Contrôle anticipé du téléphone (message clair avant de créer le compte).
+  // La contrainte d'unicité en base reste l'arbitre en cas de course.
+  if (phone) {
+    const { data: taken } = await admin.from("profiles").select("id").eq("phone", phone).maybeSingle();
+    if (taken) return { fieldErrors: { phone: "Ce numéro est déjà utilisé par un autre compte." } };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name: firstName, last_name: lastName } } });
   if (error) return { error: translateAuthError(error.message) };
-  if (data.user) {
-    await supabase.from("profiles").update({ first_name: firstName, last_name: lastName, phone }).eq("id", data.user.id);
-    if (phone && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const admin = createServiceRoleClient();
-      const { error: phoneError } = await admin.auth.admin.updateUserById(data.user.id, { phone });
-      if (phoneError) return { error: "Le compte a été créé, mais le numéro de téléphone n'a pas pu être associé. Tu peux récupérer le compte par email." };
-    }
 
-    if (school) {
-      // Rattachement à l'école : passe par service_role car un élève qui
-      // vient de s'inscrire n'est pas encore membre de l'école (la RLS
-      // school_members n'autorise l'insertion qu'aux admins/school_admins
-      // — voir migration 0018). Le code a déjà été validé ci-dessus.
-      try {
-        const admin = createServiceRoleClient();
-        const { error: memberError } = await admin.from("school_members").upsert(
-          { school_id: school.id, profile_id: data.user.id, role: "student", status: "active" },
-          { onConflict: "school_id,profile_id" }
-        );
-        if (memberError) {
-          console.error("Impossible de rattacher l'élève à l'école:", memberError.message);
-          return { error: "Le compte a été créé, mais le rattachement à l'école a échoué. Contacte ton administrateur d'école." };
-        }
-      } catch (schoolLinkError) {
-        console.error("Service role indisponible pour le rattachement école:", schoolLinkError);
-      }
+  const user = data.user;
+  // Avec la confirmation d'email activée, un email déjà inscrit renvoie un
+  // faux utilisateur sans identités : on ne le touche surtout pas.
+  if (!user || (user.identities && user.identities.length === 0)) {
+    return { error: "Un compte existe déjà avec cet email." };
+  }
+
+  const failure = await finalizeRegistration(admin, user, { firstName, lastName, phone, schoolCode: rawSchoolCode });
+  if (failure) {
+    const cleaned = await rollbackRegistration(admin, supabase, user);
+    if (!cleaned && !failure.fieldErrors) {
+      return { error: "L'inscription est incomplète. Essaie de te connecter, ou contacte ton école si le problème continue." };
+    }
+    return failure;
+  }
+
+  redirect("/dashboard");
+}
+
+/** Termine le compte : téléphone Auth, puis profil + école en UNE transaction SQL. */
+async function finalizeRegistration(
+  admin: AdminClient,
+  user: CreatedUser,
+  d: { firstName: string; lastName: string; phone: string | null; schoolCode: string }
+): Promise<NonNullable<AuthActionState> | null> {
+  if (d.phone) {
+    const { error } = await admin.auth.admin.updateUserById(user.id, { phone: d.phone });
+    if (error) {
+      console.error("[register] association du téléphone impossible:", error.message);
+      return { fieldErrors: { phone: "Ce numéro n'a pas pu être associé au compte. Vérifie-le, ou laisse le champ vide." } };
     }
   }
-  redirect("/dashboard");
+
+  const { error } = await admin.rpc("complete_registration", {
+    p_user_id: user.id,
+    p_first_name: d.firstName,
+    p_last_name: d.lastName,
+    p_phone: d.phone ?? "",
+    p_school_code: d.schoolCode,
+  });
+  if (!error) return null;
+
+  const message = error.message ?? "";
+  if (message.includes("PHONE_TAKEN")) return { fieldErrors: { phone: "Ce numéro est déjà utilisé par un autre compte." } };
+  if (message.includes("SCHOOL_NOT_FOUND")) {
+    return { fieldErrors: { schoolCode: "Code établissement introuvable ou inactif. Vérifie-le auprès de ton école, ou laisse ce champ vide." } };
+  }
+  console.error("[register] finalisation impossible:", message);
+  return { error: "L'inscription n'a pas pu être finalisée. Aucun compte n'a été créé : réessaie dans un instant." };
+}
+
+/**
+ * Annule un compte créé quelques secondes plus tôt par CETTE requête.
+ * Garde-fou : on ne supprime jamais un compte de plus de 5 minutes.
+ * La suppression cascade sur le profil et les rattachements.
+ */
+async function rollbackRegistration(
+  admin: AdminClient,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: CreatedUser
+): Promise<boolean> {
+  let cleaned = false;
+  const ageMs = Date.now() - Date.parse(user.created_at ?? "");
+  if (Number.isFinite(ageMs) && ageMs < 5 * 60 * 1000) {
+    const { error } = await admin.auth.admin.deleteUser(user.id);
+    if (error) console.error("[register] ANNULATION ÉCHOUÉE, compte à nettoyer à la main:", user.id, error.message);
+    else cleaned = true;
+  } else {
+    console.error("[register] annulation refusée (compte trop ancien):", user.id);
+  }
+  try { await supabase.auth.signOut({ scope: "local" }); } catch { /* session déjà invalide */ }
+  return cleaned;
 }
 
 export async function loginAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
