@@ -14,15 +14,23 @@ export interface RateLimitResult {
   retryAfter: number;
 }
 
-/** Règles centralisées : un seul endroit à ajuster. */
+/**
+ * Règles centralisées : un seul endroit à ajuster.
+ *
+ * Les plafonds PAR IP sont volontairement larges : dans une école (Wi-Fi
+ * partagé) ou sur un réseau mobile (CGNAT), des dizaines d'élèves partagent
+ * UNE adresse publique, et les connexions réussies comptent aussi. Ils ne
+ * servent qu'à freiner un robot qui teste des milliers de comptes.
+ * La vraie protection contre le mot de passe deviné est la règle PAR COMPTE.
+ */
 export const LIMITS = {
-  loginIp: { max: 30, windowSeconds: 15 * 60 },
+  loginIp: { max: 300, windowSeconds: 15 * 60 },
   loginAccount: { max: 8, windowSeconds: 15 * 60 },
-  registerIp: { max: 10, windowSeconds: 60 * 60 },
-  recoveryIp: { max: 10, windowSeconds: 60 * 60 },
+  registerIp: { max: 100, windowSeconds: 60 * 60 },
+  recoveryIp: { max: 60, windowSeconds: 60 * 60 },
   recoveryTarget: { max: 5, windowSeconds: 60 * 60 },
   otpVerifyTarget: { max: 10, windowSeconds: 15 * 60 },
-  otpVerifyIp: { max: 30, windowSeconds: 15 * 60 },
+  otpVerifyIp: { max: 120, windowSeconds: 15 * 60 },
   searchUser: { max: 60, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
