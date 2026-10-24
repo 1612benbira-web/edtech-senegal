@@ -9,6 +9,7 @@ import { AdminSection } from "@/components/admin/admin-section";
 import { AdminForm } from "@/components/admin/admin-form";
 import { StatusSelector } from "@/components/admin/status-selector";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { TEACHER_ALLOWED_STATUSES } from "@/lib/utils/teacher-scope";
 import {
   createTeacherChapterAction, updateTeacherChapterAction, updateTeacherChapterStatusAction,
   deleteTeacherChapterAction, updateTeacherLessonStatusAction, deleteTeacherLessonAction,
@@ -31,7 +32,7 @@ export default async function TeacherCurriculumPage(props: { params: Promise<{ c
     <div className="space-y-6">
       <Link href="/teacher/courses" className="text-xs text-primary hover:underline">← Mes cours</Link>
       <AdminPageHeader icon={BookOpen} title={found.curriculum.title}
-        description={editable ? "Tu peux modifier ce programme de ton école." : "Programme national : lecture seule."} />
+        description={editable ? "Tu peux modifier ce programme de ton école. Pour qu'un chapitre ou une leçon soit visible des élèves, passe-le en « En révision » : le responsable de l'établissement le publie." : "Programme national : lecture seule."} />
 
       {chapters.map((ch: any) => (
         <AdminSection key={ch.id} title={`${ch.order}. ${ch.title}`}>
@@ -40,7 +41,7 @@ export default async function TeacherCurriculumPage(props: { params: Promise<{ c
               <div className="flex flex-wrap items-center gap-3">
                 <StatusSelector
                   action={async (prev: any, fd: FormData) => { "use server"; fd.set("schoolId", schoolId); return updateTeacherChapterStatusAction(prev, fd); }}
-                  idFieldName="chapterId" id={ch.id} currentStatus={ch.status} />
+                  idFieldName="chapterId" id={ch.id} currentStatus={ch.status} allowedStatuses={TEACHER_ALLOWED_STATUSES} />
                 <DeleteButton action={async (id: string) => { "use server"; return deleteTeacherChapterAction(id, schoolId); }}
                   id={ch.id} confirmMessage={`Supprimer le chapitre "${ch.title}" ?`} />
               </div>
@@ -55,7 +56,7 @@ export default async function TeacherCurriculumPage(props: { params: Promise<{ c
                   <div className="flex shrink-0 items-center gap-3">
                     <StatusSelector
                       action={async (prev: any, fd: FormData) => { "use server"; fd.set("schoolId", schoolId); return updateTeacherLessonStatusAction(prev, fd); }}
-                      idFieldName="lessonId" id={l.id} currentStatus={l.status} />
+                      idFieldName="lessonId" id={l.id} currentStatus={l.status} allowedStatuses={TEACHER_ALLOWED_STATUSES} />
                     <DeleteButton action={async (id: string) => { "use server"; return deleteTeacherLessonAction(id, schoolId); }}
                       id={l.id} confirmMessage={`Supprimer la leçon "${l.title}" ?`} />
                   </div>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireTeacherAccess } from "@/lib/services/adminGuard";
-import { teacherCurriculumAccess } from "@/lib/utils/teacher-scope";
+import { teacherCurriculumAccess, canTeacherSetStatus, PUBLICATION_RESERVED_MESSAGE } from "@/lib/utils/teacher-scope";
 import { chapterSchema, chapterStatusSchema, lessonSchema, lessonStatusSchema } from "@/lib/validations/curriculum";
 import { z } from "zod";
 
@@ -98,6 +98,7 @@ export async function updateTeacherChapterStatusAction(_p: ActionState, fd: Form
     const schoolId = schoolOf(fd);
     const parsed = chapterStatusSchema.safeParse({ chapterId: fd.get("chapterId"), status: fd.get("status") });
     if (!parsed.success) return fail(parsed.error.issues);
+    if (!canTeacherSetStatus(parsed.data.status)) return { error: PUBLICATION_RESERVED_MESSAGE };
     const { supabase } = await requireTeacherAccess(schoolId);
     const curriculumId = await curriculumOfChapter(supabase, parsed.data.chapterId);
     await assertCanEdit(schoolId, curriculumId);
@@ -173,6 +174,7 @@ export async function updateTeacherLessonStatusAction(_p: ActionState, fd: FormD
     const schoolId = schoolOf(fd);
     const parsed = lessonStatusSchema.safeParse({ lessonId: fd.get("lessonId"), status: fd.get("status") });
     if (!parsed.success) return fail(parsed.error.issues);
+    if (!canTeacherSetStatus(parsed.data.status)) return { error: PUBLICATION_RESERVED_MESSAGE };
     const { supabase } = await requireTeacherAccess(schoolId);
     const curriculumId = await curriculumOfLesson(supabase, parsed.data.lessonId);
     await assertCanEdit(schoolId, curriculumId);

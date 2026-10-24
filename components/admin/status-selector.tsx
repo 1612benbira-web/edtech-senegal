@@ -23,11 +23,14 @@ export function StatusSelector({
   idFieldName,
   id,
   currentStatus,
+  allowedStatuses,
 }: {
   action: (prevState: any, formData: FormData) => Promise<any>;
   idFieldName: string;
   id: string;
   currentStatus: string;
+  /** Si fourni, seules ces valeurs sont proposées (+ le statut actuel, affiché mais non re-sélectionnable). */
+  allowedStatuses?: readonly string[];
 }) {
   const [state, formAction] = useActionState(action, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -42,11 +45,17 @@ export function StatusSelector({
           onChange={() => formRef.current?.requestSubmit()}
           className={`rounded-full border-0 px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[currentStatus]}`}
         >
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
+          {Object.entries(STATUS_LABELS)
+            .filter(([value]) => !allowedStatuses || allowedStatuses.includes(value) || value === currentStatus)
+            .map(([value, label]) => (
+              <option
+                key={value}
+                value={value}
+                disabled={!!allowedStatuses && !allowedStatuses.includes(value)}
+              >
+                {label}
+              </option>
+            ))}
         </select>
       </form>
       {state?.error && <p className="mt-1 text-xs text-danger">{state.error}</p>}

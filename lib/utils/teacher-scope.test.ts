@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assignmentCoversCurriculum, teacherCurriculumAccess } from "./teacher-scope";
+import { assignmentCoversCurriculum, teacherCurriculumAccess, canTeacherSetStatus } from "./teacher-scope";
 
 const A = { subject_id: "m", level_id: "t", series_id: null };
 const AS2 = { subject_id: "m", level_id: "t", series_id: "s2" };
@@ -22,4 +22,13 @@ describe("teacherCurriculumAccess", () => {
   it("lecture seule sur national publié", () => expect(teacherCurriculumAccess("ecole1", [A], cur({ school_id: null, status: "published" }))).toBe("read"));
   it("national non publié refusé", () => expect(teacherCurriculumAccess("ecole1", [A], cur({ school_id: null }))).toBe("none"));
   it("hors périmètre refusé même dans son école", () => expect(teacherCurriculumAccess("ecole1", [A], cur({ subject_id: "x" }))).toBe("none"));
+});
+
+describe("canTeacherSetStatus", () => {
+  it("autorise brouillon, révision, archivé", () => {
+    for (const s of ["draft", "review", "archived"]) expect(canTeacherSetStatus(s)).toBe(true);
+  });
+  it("refuse publier et valider (réservés au responsable)", () => {
+    for (const s of ["published", "validated", "n'importe quoi"]) expect(canTeacherSetStatus(s)).toBe(false);
+  });
 });
