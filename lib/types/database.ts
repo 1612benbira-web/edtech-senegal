@@ -529,6 +529,10 @@ export interface Database {
         Args: { p_key: string; p_max: number; p_window_seconds: number };
         Returns: { allowed: boolean; retry_after: number };
       };
+      complete_registration: {
+        Args: { p_user_id: string; p_first_name: string; p_last_name: string; p_phone: string; p_school_code: string };
+        Returns: undefined;
+      };
       reset_rate_limit: {
         Args: { p_key: string };
         Returns: undefined;
