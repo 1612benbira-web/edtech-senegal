@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { loginSchema, registerSchema } from "@/lib/validations/schemas";
 import { getSchoolByCode } from "@/lib/services/schoolService";
+import { LIMITS, enforce, getClientIp, resetRateLimit, tooManyMessage } from "@/lib/security/rate-limit";
 
 export type AuthActionState = { error?: string; success?: string; next?: "phone"; phone?: string; fieldErrors?: Record<string, string> } | null;
 
@@ -17,6 +18,10 @@ function normalizePhone(value: string) {
 }
 
 export async function registerAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const ip = await getClientIp();
+  const limited = await enforce([{ scope: "register:ip", identifier: ip, rule: LIMITS.registerIp }]);
+  if (!limited.allowed) return { error: tooManyMessage(limited.retryAfter) };
+
   const parsed = registerSchema.safeParse({ email: formData.get("email"), password: formData.get("password"), firstName: formData.get("firstName"), lastName: formData.get("lastName"), phone: formData.get("phone") || "", schoolCode: formData.get("schoolCode") || "" });
   if (!parsed.success) { const fieldErrors: Record<string,string> = {}; for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] = issue.message; return { fieldErrors }; }
   const { email, password, firstName, lastName } = parsed.data;
@@ -85,10 +90,19 @@ export async function loginAction(_prev: AuthActionState, formData: FormData): P
     return { fieldErrors };
   }
 
+  const ip = await getClientIp();
+  const accountKey = `${parsed.data.email}|${ip ?? "?"}`;
+  const limited = await enforce([
+    { scope: "login:ip", identifier: ip, rule: LIMITS.loginIp },
+    { scope: "login:account", identifier: accountKey, rule: LIMITS.loginAccount },
+  ]);
+  if (!limited.allowed) return { error: tooManyMessage(limited.retryAfter) };
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) return { error: translateAuthError(error.message) };
+  await resetRateLimit("login:account", accountKey);
 
   /*
    * Certains anciens comptes élèves peuvent exister dans Supabase Auth
@@ -145,6 +159,16 @@ export async function loginAction(_prev: AuthActionState, formData: FormData): P
 export async function forgotPasswordAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const identifier = String(formData.get("identifier") || "").trim();
   if (!identifier) return { fieldErrors: { identifier: "Email ou numéro de téléphone requis." } };
+
+  // Les compteurs s'appliquent AVANT toute recherche de compte et que le
+  // compte existe ou non : la limite elle-même ne révèle donc rien.
+  const ip = await getClientIp();
+  const limited = await enforce([
+    { scope: "recovery:ip", identifier: ip, rule: LIMITS.recoveryIp },
+    { scope: "recovery:target", identifier, rule: LIMITS.recoveryTarget },
+  ]);
+  if (!limited.allowed) return { error: tooManyMessage(limited.retryAfter) };
+
   const supabase = await createClient();
   if (identifier.includes("@")) {
     const siteUrl = await getSiteUrl();
@@ -154,25 +178,37 @@ export async function forgotPasswordAction(_prev: AuthActionState, formData: For
     if (error) return { error: "Impossible d'envoyer le lien. Vérifie l'adresse puis réessaie." };
     return { success: "Si un compte correspond à cet email, un lien de récupération a été envoyé." };
   }
+
   const phone = normalizePhone(identifier);
   if (!phone) return { fieldErrors: { identifier: "Email ou numéro invalide. Exemple : +221 77 123 45 67." } };
-  try {
-    const admin = createServiceRoleClient();
-    const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    const exists = users.users.some((u) => u.phone === phone);
-    if (!exists) return { success: "Si un compte correspond à ce numéro, un code SMS a été envoyé." };
-  } catch {
-    return { error: "La récupération par téléphone nécessite SUPABASE_SERVICE_ROLE_KEY dans .env.local." };
-  }
+
+  // Pas de listUsers() : (1) il ne passait pas l'échelle (1000 comptes max) et
+  // (2) la réponse différait selon l'existence du compte. On demande l'envoi
+  // directement (shouldCreateUser: false) et on répond TOUJOURS de la même
+  // façon, que le numéro existe ou non. Les échecs du fournisseur SMS sont
+  // journalisés côté serveur (sans le numéro) au lieu d'être montrés.
   const { error } = await supabase.auth.signInWithOtp({ phone, options: { shouldCreateUser: false } });
-  if (error) return { error: "Impossible d'envoyer le code SMS. Vérifie que Phone Auth et ton fournisseur SMS sont activés dans Supabase." };
-  return { success: "Un code de récupération a été envoyé par SMS.", next: "phone", phone };
+  if (error) console.error("[forgot-password] envoi SMS non effectué:", error.code ?? error.status ?? "inconnu");
+  return {
+    success: "Si un compte correspond à ce numéro, un code a été envoyé par SMS.",
+    next: "phone",
+    phone,
+  };
 }
 
 export async function verifyPhoneRecoveryAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const phone = normalizePhone(String(formData.get("phone") || ""));
   const token = String(formData.get("token") || "").trim();
   if (!phone || !/^\d{6}$/.test(token)) return { error: "Numéro ou code invalide." };
+
+  // Un code à 6 chiffres se devine par force brute : on plafonne les essais.
+  const ip = await getClientIp();
+  const limited = await enforce([
+    { scope: "otp:target", identifier: phone, rule: LIMITS.otpVerifyTarget },
+    { scope: "otp:ip", identifier: ip, rule: LIMITS.otpVerifyIp },
+  ]);
+  if (!limited.allowed) return { error: tooManyMessage(limited.retryAfter) };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
   if (error) return { error: "Code incorrect ou expiré." };

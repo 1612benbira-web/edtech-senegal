@@ -525,6 +525,14 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number };
+        Returns: { allowed: boolean; retry_after: number };
+      };
+      reset_rate_limit: {
+        Args: { p_key: string };
+        Returns: undefined;
+      };
       admin_force_logout_user: {
         Args: { target_user_id: string };
         Returns: undefined;

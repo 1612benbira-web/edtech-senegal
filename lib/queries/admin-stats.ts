@@ -31,7 +31,12 @@ export async function getStudents(
     .order("created_at", { ascending: false });
 
   if (searchQuery) {
-    query = query.or(`email.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
+    // La saisie est interpolée dans un filtre PostgREST (.or) : virgules,
+    // parenthèses et guillemets y ont un sens (injection de filtres) → retirés.
+    const safe = searchQuery.replace(/[,()"'\\]/g, " ").trim();
+    if (safe) {
+      query = query.or(`email.ilike.%${safe}%,first_name.ilike.%${safe}%,last_name.ilike.%${safe}%`);
+    }
   }
 
   const from = (page - 1) * pageSize;
