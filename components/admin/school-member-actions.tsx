@@ -1,7 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
-import { useFormState } from "react-dom";
+import { useTransition, useActionState } from "react";
 import { updateSchoolMemberStatusAction, removeSchoolMemberAction } from "@/app/admin/schools/actions";
 
 export function SchoolMemberActions({
@@ -13,7 +12,7 @@ export function SchoolMemberActions({
   schoolMemberId: string;
   currentStatus: "active" | "inactive";
 }) {
-  const [state, formAction] = useFormState(updateSchoolMemberStatusAction, null);
+  const [state, formAction] = useActionState(updateSchoolMemberStatusAction, null);
   const [isPending, startTransition] = useTransition();
   const nextStatus = currentStatus === "active" ? "inactive" : "active";
 

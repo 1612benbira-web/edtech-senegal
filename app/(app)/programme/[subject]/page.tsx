@@ -6,11 +6,12 @@ import { startSubjectQuizAction, startEvaluationQuizAction } from "@/app/(app)/q
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 import { getSubjectTheme } from "@/lib/constants/subject-theme";
 
-export default async function SubjectProgrammePage({
-  params,
-}: {
-  params: { subject: string };
-}) {
+export default async function SubjectProgrammePage(
+  props: {
+    params: Promise<{ subject: string }>;
+  }
+) {
+  const params = await props.params;
   const supabase = await createClient();
   const {
     data: { user },

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { useEffect, useState, useActionState } from "react";
 import { Pencil, Check, X } from "lucide-react";
 import { updateNameAction } from "./actions";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,7 @@ export function EditNameForm({
   lastName: string | null;
 }) {
   const [editing, setEditing] = useState(false);
-  const [state, formAction] = useFormState(updateNameAction, null);
+  const [state, formAction] = useActionState(updateNameAction, null);
 
   // Referme le formulaire automatiquement après un enregistrement réussi.
   useEffect(() => {

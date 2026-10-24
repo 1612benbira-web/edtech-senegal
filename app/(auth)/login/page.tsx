@@ -11,11 +11,12 @@ const STATUS_MESSAGES: Record<string, string> = {
   "reset-error": "La récupération a échoué. Demande un nouveau lien.",
 };
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: { loggedout?: string; "force-logout"?: string; deleted?: string; reset?: string; "reset-error"?: string };
-}) {
+export default async function LoginPage(
+  props: {
+    searchParams: Promise<{ loggedout?: string; "force-logout"?: string; deleted?: string; reset?: string; "reset-error"?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const statusKey = Object.keys(STATUS_MESSAGES).find(
     (key) => (searchParams as Record<string, string | undefined>)[key]
   );

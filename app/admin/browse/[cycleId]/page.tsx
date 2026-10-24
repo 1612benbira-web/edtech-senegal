@@ -6,7 +6,8 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { BrowseGrid, BrowseCard, BrowseEmptyState } from "@/components/admin/browse/browse-card";
 import { BrowseBreadcrumb } from "@/components/admin/browse/breadcrumb";
 
-export default async function BrowseLevelsPage({ params }: { params: { cycleId: string } }) {
+export default async function BrowseLevelsPage(props: { params: Promise<{ cycleId: string }> }) {
+  const params = await props.params;
   await requireAdmin();
   const cycles = await getCyclesOverview();
   const cycle = cycles.find((c) => c.id === params.cycleId);

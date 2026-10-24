@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useState, useActionState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { deleteAccountAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -11,7 +10,7 @@ const CONFIRMATION_WORD = "SUPPRIMER";
 export function DeleteAccountDialog() {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
-  const [state, formAction] = useFormState(deleteAccountAction, null);
+  const [state, formAction] = useActionState(deleteAccountAction, null);
 
   return (
     <>

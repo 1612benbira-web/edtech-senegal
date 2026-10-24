@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { updateSchoolNameAction } from "@/app/admin/schools/actions";
 import { Input } from "@/components/ui/input";
 import { Label, FieldError } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 export function SchoolNameForm({ schoolId, currentName }: { schoolId: string; currentName: string }) {
-  const [state, formAction] = useFormState(updateSchoolNameAction, null);
+  const [state, formAction] = useActionState(updateSchoolNameAction, null);
 
   return (
     <form action={formAction} className="max-w-sm space-y-3 rounded-lg border border-border bg-background p-4">

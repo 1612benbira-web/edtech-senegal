@@ -6,7 +6,8 @@ import { requireSchoolAccess } from "@/lib/services/adminGuard";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { CurriculumToggleRow } from "@/components/admin/curriculum-toggle-row";
 
-export default async function SchoolCurriculumsPage({ params }: { params: { id: string } }) {
+export default async function SchoolCurriculumsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSchoolAccess(params.id);
 
   const school = await getSchoolById(params.id);

@@ -13,11 +13,12 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(iso));
 }
 
-export default async function TeacherMessagesPage({
-  searchParams,
-}: {
-  searchParams: { levelId?: string };
-}) {
+export default async function TeacherMessagesPage(
+  props: {
+    searchParams: Promise<{ levelId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const currentSchool = await getCurrentSchool();
   const schoolId = currentSchool!.schoolId;
   const { assignments } = await requireTeacherAccess(schoolId);

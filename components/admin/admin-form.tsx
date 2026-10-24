@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { ActionState } from "@/app/admin/curriculum-actions";
 import { Input } from "@/components/ui/input";
 import { Label, FieldError } from "@/components/ui/label";
@@ -27,7 +27,7 @@ export function AdminForm({
   fields: Field[];
   submitLabel: string;
 }) {
-  const [state, formAction] = useFormState<ActionState, FormData>(action, null);
+  const [state, formAction] = useActionState<ActionState, FormData>(action, null);
 
   return (
     <form action={formAction} className="space-y-3 rounded-lg border border-border bg-background p-4">

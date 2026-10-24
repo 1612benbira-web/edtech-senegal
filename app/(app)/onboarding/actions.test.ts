@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const LEVEL_ID = "11111111-1111-1111-1111-111111111111";
-const ALLOWED_SUBJECT_ID = "22222222-2222-2222-2222-222222222222";
-const FOREIGN_SUBJECT_ID = "33333333-3333-3333-3333-333333333333"; // n'appartient PAS à ce niveau
-const USER_ID = "44444444-4444-4444-4444-444444444444";
+// vi.hoisted() est exécuté AVANT les `const` du module : les identifiants
+// utilisés dans les mocks doivent donc être déclarés dans le même bloc.
+const {
+  LEVEL_ID,
+  ALLOWED_SUBJECT_ID,
+  FOREIGN_SUBJECT_ID, // n'appartient PAS à ce niveau
+  USER_ID,
+} = vi.hoisted(() => ({
+  LEVEL_ID: "11111111-1111-1111-1111-111111111111",
+  ALLOWED_SUBJECT_ID: "22222222-2222-2222-2222-222222222222",
+  FOREIGN_SUBJECT_ID: "33333333-3333-3333-3333-333333333333",
+  USER_ID: "44444444-4444-4444-4444-444444444444",
+}));
 
 const profilesUpdateMock = vi.hoisted(() => vi.fn());
 const levelSubjectsSelectResult = vi.hoisted(() => ({
@@ -58,7 +67,7 @@ describe("completeOnboardingAction — validation croisée niveau/série ↔ mat
 
     const result = await completeOnboardingAction({}, formData);
 
-    expect(result.fieldErrors?.subjectIds).toBeDefined();
+    expect(result?.fieldErrors?.subjectIds).toBeDefined();
     expect(profilesUpdateMock).not.toHaveBeenCalled();
   });
 

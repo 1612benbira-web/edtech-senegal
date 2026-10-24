@@ -11,11 +11,12 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminSection } from "@/components/admin/admin-section";
 import { AdminItemRow } from "@/components/admin/admin-item-row";
 
-export default async function LessonsAdminPage({
-  searchParams,
-}: {
-  searchParams: { curriculumId?: string; chapterId?: string };
-}) {
+export default async function LessonsAdminPage(
+  props: {
+    searchParams: Promise<{ curriculumId?: string; chapterId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const curriculums = await getAllCurriculums();
   const selectedCurriculumId = searchParams.curriculumId ?? curriculums[0]?.id;
 

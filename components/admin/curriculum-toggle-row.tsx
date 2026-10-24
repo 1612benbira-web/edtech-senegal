@@ -1,7 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
-import { useRef, useTransition } from "react";
+import { useActionState, useRef, useTransition } from "react";
 import { toggleSchoolCurriculumAction } from "@/app/admin/schools/actions";
 import { AdminItemRow } from "@/components/admin/admin-item-row";
 
@@ -18,7 +17,7 @@ export function CurriculumToggleRow({
   subtitle: string;
   enabled: boolean;
 }) {
-  const [state, formAction] = useFormState(toggleSchoolCurriculumAction, null);
+  const [state, formAction] = useActionState(toggleSchoolCurriculumAction, null);
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
 

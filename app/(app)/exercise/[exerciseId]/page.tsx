@@ -4,11 +4,12 @@ import { getPublishedQuestionsForExercise } from "@/lib/queries/exercises";
 import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
 import { ExerciseRunner } from "./exercise-runner";
 
-export default async function ExercisePage({
-  params,
-}: {
-  params: { exerciseId: string };
-}) {
+export default async function ExercisePage(
+  props: {
+    params: Promise<{ exerciseId: string }>;
+  }
+) {
+  const params = await props.params;
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("exercises")

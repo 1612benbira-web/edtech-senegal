@@ -7,11 +7,12 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { BrowseGrid, BrowseCard, BrowseEmptyState } from "@/components/admin/browse/browse-card";
 import { BrowseBreadcrumb } from "@/components/admin/browse/breadcrumb";
 
-export default async function BrowseSubjectsPage({
-  params,
-}: {
-  params: { cycleId: string; levelId: string };
-}) {
+export default async function BrowseSubjectsPage(
+  props: {
+    params: Promise<{ cycleId: string; levelId: string }>;
+  }
+) {
+  const params = await props.params;
   await requireAdmin();
   const levels = await getLevels(params.cycleId);
   const level = (levels ?? []).find((l: any) => l.id === params.levelId);

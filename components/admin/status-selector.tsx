@@ -1,7 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
-import { useRef } from "react";
+import { useActionState, useRef } from "react";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Brouillon",
@@ -30,7 +29,7 @@ export function StatusSelector({
   id: string;
   currentStatus: string;
 }) {
-  const [state, formAction] = useFormState(action, null);
+  const [state, formAction] = useActionState(action, null);
   const formRef = useRef<HTMLFormElement>(null);
 
   return (

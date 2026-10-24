@@ -33,11 +33,12 @@ const ANSWER_FORMAT_HELP = `Format selon le type choisi :
 • Association : une paire par ligne, "gauche => droite"
 • Ordonnancement : les éléments un par ligne, dans le bon ordre`;
 
-export default async function TeacherExercisesPage({
-  searchParams,
-}: {
-  searchParams: { curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string };
-}) {
+export default async function TeacherExercisesPage(
+  props: {
+    searchParams: Promise<{ curriculumId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const currentSchool = await getCurrentSchool();
   const schoolId = currentSchool!.schoolId;
   const { assignments } = await requireTeacherAccess(schoolId);
@@ -178,7 +179,10 @@ export default async function TeacherExercisesPage({
                           currentStatus={ex.status}
                         />
                         <DeleteButton
-                          action={(id) => deleteTeacherExerciseAction(id, schoolId)}
+                          action={async (id: string) => {
+                        "use server";
+                        return deleteTeacherExerciseAction(id, schoolId);
+                      }}
                           id={ex.id}
                           confirmMessage={`Supprimer l'exercice "${ex.title}" ?`}
                         />
@@ -252,7 +256,10 @@ export default async function TeacherExercisesPage({
                           currentStatus={q.status}
                         />
                         <DeleteButton
-                          action={(id) => deleteTeacherQuestionAction(id, schoolId)}
+                          action={async (id: string) => {
+                        "use server";
+                        return deleteTeacherQuestionAction(id, schoolId);
+                      }}
                           id={q.id}
                           confirmMessage="Supprimer cette question ?"
                         />

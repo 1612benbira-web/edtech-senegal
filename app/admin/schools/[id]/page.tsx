@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { SchoolStatusToggle } from "@/components/admin/school-status-toggle";
 import { SchoolNameForm } from "@/components/admin/school-name-form";
 
-export default async function SchoolDetailPage({ params }: { params: { id: string } }) {
+export default async function SchoolDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { isSuperAdmin } = await requireSchoolAccess(params.id);
 
   const school = await getSchoolById(params.id);

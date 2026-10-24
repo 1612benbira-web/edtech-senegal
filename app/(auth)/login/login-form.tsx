@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction, type AuthActionState } from "../actions";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label, FieldError } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 export function LoginForm() {
-  const [state, formAction] = useFormState<AuthActionState, FormData>(
+  const [state, formAction] = useActionState<AuthActionState, FormData>(
     loginAction,
     null
   );

@@ -19,7 +19,8 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-export default async function MessageDetailPage({ params }: { params: { id: string } }) {
+export default async function MessageDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const message = await getMyMessageDetail(params.id);
   if (!message) notFound();
 

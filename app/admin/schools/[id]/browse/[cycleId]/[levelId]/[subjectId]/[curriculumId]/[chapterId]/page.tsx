@@ -8,18 +8,19 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { BrowseGrid, BrowseCard, BrowseEmptyState } from "@/components/admin/browse/browse-card";
 import { BrowseBreadcrumb } from "@/components/admin/browse/breadcrumb";
 
-export default async function SchoolBrowseLessonsPage({
-  params,
-}: {
-  params: {
-    id: string;
-    cycleId: string;
-    levelId: string;
-    subjectId: string;
-    curriculumId: string;
-    chapterId: string;
-  };
-}) {
+export default async function SchoolBrowseLessonsPage(
+  props: {
+    params: Promise<{
+      id: string;
+      cycleId: string;
+      levelId: string;
+      subjectId: string;
+      curriculumId: string;
+      chapterId: string;
+    }>;
+  }
+) {
+  const params = await props.params;
   await requireSchoolAccess(params.id);
   const school = await getSchoolById(params.id);
   if (!school) notFound();
