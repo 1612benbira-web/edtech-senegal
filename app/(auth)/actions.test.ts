@@ -47,6 +47,17 @@ describe("forgotPasswordAction (téléphone)", () => {
     expect(exists).toMatchObject({ next: "phone", phone: "+221771234567" });
   });
 
+  it("fournisseur SMS non configuré : message clair, sans étape « code », identique pour tous les numéros", async () => {
+    const { forgotPasswordAction } = await import("./actions");
+    signInWithOtp.mockResolvedValue({ error: { code: "phone_provider_disabled", status: 400, message: "Unsupported phone provider" } });
+    const a = await forgotPasswordAction(null, fd({ identifier: "+221771234567" }));
+    const b = await forgotPasswordAction(null, fd({ identifier: "+221700000000" }));
+    expect(a?.error).toContain("n'est pas encore disponible");
+    expect(a?.error).toContain("adresse email");
+    expect(a).not.toHaveProperty("next");
+    expect(b).toEqual(a);
+  });
+
   it("n'appelle jamais listUsers (service_role non sollicité)", async () => {
     const { forgotPasswordAction } = await import("./actions");
     signInWithOtp.mockResolvedValue({ error: null });
