@@ -219,6 +219,9 @@ export async function loginAction(_prev: AuthActionState, formData: FormData): P
   redirect(redirectTo);
 }
 
+const PHONE_RECOVERY_UNAVAILABLE =
+  "La récupération par SMS n'est pas encore disponible. Utilise ton adresse email, ou contacte ton école.";
+
 export async function forgotPasswordAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const identifier = String(formData.get("identifier") || "").trim();
   if (!identifier) return { fieldErrors: { identifier: "Email ou numéro de téléphone requis." } };
@@ -251,6 +254,16 @@ export async function forgotPasswordAction(_prev: AuthActionState, formData: For
   // façon, que le numéro existe ou non. Les échecs du fournisseur SMS sont
   // journalisés côté serveur (sans le numéro) au lieu d'être montrés.
   const { error } = await supabase.auth.signInWithOtp({ phone, options: { shouldCreateUser: false } });
+
+  // EXCEPTION à la réponse uniforme : « aucun fournisseur SMS configuré ».
+  // Supabase refuse alors la requête AVANT de chercher le compte : l'erreur est
+  // identique pour tous les numéros, donc l'afficher ne révèle rien sur
+  // l'existence d'un compte, et évite d'attendre un code qui ne viendra jamais.
+  if (error && (error.code === "phone_provider_disabled" || /unsupported phone provider/i.test(error.message ?? ""))) {
+    console.error("[forgot-password] fournisseur SMS non configuré dans Supabase (Authentication > Providers > Phone)");
+    return { error: PHONE_RECOVERY_UNAVAILABLE };
+  }
+
   if (error) console.error("[forgot-password] envoi SMS non effectué:", error.code ?? error.status ?? "inconnu");
   return {
     success: "Si un compte correspond à ce numéro, un code a été envoyé par SMS.",
