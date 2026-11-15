@@ -533,6 +533,10 @@ export interface Database {
         Args: { p_user_id: string; p_first_name: string; p_last_name: string; p_phone: string; p_school_code: string };
         Returns: undefined;
       };
+      is_phone_registered: {
+        Args: { p_phone: string };
+        Returns: boolean;
+      };
       reset_rate_limit: {
         Args: { p_key: string };
         Returns: undefined;

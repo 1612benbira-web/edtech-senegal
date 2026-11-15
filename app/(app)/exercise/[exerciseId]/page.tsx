@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublishedQuestionsForExercise } from "@/lib/queries/exercises";
 import { getCurrentSchoolId, isCurriculumAllowedForSchool } from "@/lib/services/schoolService";
@@ -23,10 +23,11 @@ export default async function ExercisePage(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
 
   const chapter = (exercise as any).lessons?.chapters;

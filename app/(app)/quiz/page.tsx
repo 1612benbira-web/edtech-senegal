@@ -23,16 +23,17 @@ export default async function QuizHubPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id, series_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
   if (!profile?.level_id) redirect("/onboarding");
 
   const [programmes, level] = await Promise.all([
-    getMyProgramme(user!.id, profile.level_id, profile.series_id),
+    getMyProgramme(user.id, profile.level_id, profile.series_id),
     getLevelInfo(profile.level_id),
   ]);
   const subjectsWithContent = programmes.filter((p) => p.curriculumId && p.totalChapters > 0);
