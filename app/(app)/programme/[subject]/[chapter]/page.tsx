@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CheckCircle2, ArrowLeft, ArrowRight } from "lucide-react";
 import { getChapterById } from "@/lib/queries/curriculums-detail";
 import { getPublishedLessonsForChapter } from "@/lib/queries/lessons";
@@ -19,11 +19,12 @@ export default async function ChapterPage(
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("level_id, series_id").eq("id", user!.id).single();
+  if (!user) redirect("/login");
+  const { data: profile } = await supabase.from("profiles").select("level_id, series_id").eq("id", user.id).single();
   if (!profile?.level_id || (chapter as any).curriculums?.level_id !== profile.level_id) notFound();
 
   const lessons = await getPublishedLessonsForChapter(params.chapter);
-  const programmes = await getMyProgramme(user!.id, profile.level_id, profile.series_id);
+  const programmes = await getMyProgramme(user.id, profile.level_id, profile.series_id);
   const subjectProgramme = programmes.find((program) => program.subjectId === (chapter as any).curriculums?.subject_id);
   const chapterProgress = subjectProgramme?.chapters.find((item) => item.id === params.chapter);
 
@@ -41,7 +42,7 @@ export default async function ChapterPage(
   const { data: progressRows } = await supabase
     .from("lesson_progress")
     .select("lesson_id, status")
-    .eq("profile_id", user!.id)
+    .eq("profile_id", user.id)
     .in("lesson_id", lessons.map((l) => l.id));
 
   const progressByLesson = new Map(

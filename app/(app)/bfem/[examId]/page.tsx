@@ -18,8 +18,9 @@ export default async function ExamPage(props: { params: Promise<{ examId: string
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  const exam = await getQuizAttempt(params.examId, user!.id);
+  const exam = await getQuizAttempt(params.examId, user.id);
   if (!exam) notFound();
   if (exam.type !== "exam") redirect(`/quiz/${params.examId}`);
 
@@ -43,7 +44,7 @@ export default async function ExamPage(props: { params: Promise<{ examId: string
   );
 
   if (exam.completed_at) {
-    const correction = await getExamCorrection(params.examId, user!.id);
+    const correction = await getExamCorrection(params.examId, user.id);
     return (
       <div className="mx-auto max-w-2xl">
         {header}

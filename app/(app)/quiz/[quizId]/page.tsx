@@ -17,8 +17,9 @@ export default async function QuizPage(props: { params: Promise<{ quizId: string
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  const quiz = await getQuizAttempt(params.quizId, user!.id);
+  const quiz = await getQuizAttempt(params.quizId, user.id);
   if (!quiz) notFound();
   // Une épreuve blanche a son propre écran (chronomètre, note sur 20).
   if (quiz.type === "exam") redirect(`/bfem/${params.quizId}`);

@@ -20,6 +20,22 @@ function normalizePhone(value: string) {
 type AdminClient = ReturnType<typeof createServiceRoleClient>;
 type CreatedUser = { id: string; created_at?: string };
 
+/**
+ * Le numéro est-il déjà rattaché à un compte ? Un numéro peut l'être dans
+ * Supabase Auth (auth.users) ou dans un profil : la fonction SQL
+ * is_phone_registered (migration 0032) regarde les deux. Ne regarder que les
+ * profils laissait passer des numéros déjà pris côté Auth : le compte était
+ * créé, puis annulé quand l'association du numéro échouait.
+ */
+async function isPhoneTaken(admin: AdminClient, phone: string): Promise<boolean> {
+  const { data, error } = await admin.rpc("is_phone_registered", { p_phone: phone });
+  if (!error) return data === true;
+  // Fonction absente (migration 0032 pas encore appliquée) : ancien contrôle,
+  // sur les profils seulement.
+  const { data: taken } = await admin.from("profiles").select("id").eq("phone", phone).maybeSingle();
+  return !!taken;
+}
+
 export async function registerAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const ip = await getClientIp();
   const limited = await enforce([{ scope: "register:ip", identifier: ip, rule: LIMITS.registerIp }]);
@@ -56,9 +72,8 @@ export async function registerAction(_prev: AuthActionState, formData: FormData)
 
   // Contrôle anticipé du téléphone (message clair avant de créer le compte).
   // La contrainte d'unicité en base reste l'arbitre en cas de course.
-  if (phone) {
-    const { data: taken } = await admin.from("profiles").select("id").eq("phone", phone).maybeSingle();
-    if (taken) return { fieldErrors: { phone: "Ce numéro est déjà utilisé par un autre compte." } };
+  if (phone && (await isPhoneTaken(admin, phone))) {
+    return { fieldErrors: { phone: "Ce numéro est déjà utilisé par un autre compte." } };
   }
 
   const supabase = await createClient();
@@ -94,6 +109,10 @@ async function finalizeRegistration(
     const { error } = await admin.auth.admin.updateUserById(user.id, { phone: d.phone });
     if (error) {
       console.error("[register] association du téléphone impossible:", error.message);
+      // Cas de course : le numéro a été pris entre le contrôle et l'association.
+      if (await isPhoneTaken(admin, d.phone)) {
+        return { fieldErrors: { phone: "Ce numéro est déjà utilisé par un autre compte." } };
+      }
       return { fieldErrors: { phone: "Ce numéro n'a pas pu être associé au compte. Vérifie-le, ou laisse le champ vide." } };
     }
   }

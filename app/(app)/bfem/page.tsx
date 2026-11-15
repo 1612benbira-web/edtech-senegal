@@ -43,11 +43,12 @@ export default async function BfemHubPage(props: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id, series_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
   if (!profile?.level_id) redirect("/onboarding");
 
@@ -70,8 +71,8 @@ export default async function BfemHubPage(props: {
   }
 
   const [programmes, attempts] = await Promise.all([
-    getMyProgramme(user!.id, profile.level_id, profile.series_id),
-    getMyExamAttempts(user!.id),
+    getMyProgramme(user.id, profile.level_id, profile.series_id),
+    getMyExamAttempts(user.id),
   ]);
   const subjects = programmes.filter((p) => p.curriculumId && p.totalChapters > 0);
   const subjectNames = new Map(subjects.map((s) => [s.subjectId, s.subjectName]));

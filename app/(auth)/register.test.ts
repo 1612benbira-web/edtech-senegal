@@ -7,6 +7,7 @@ const h = vi.hoisted(() => ({
   deleteUser: vi.fn(),
   rpc: vi.fn(),
   phoneLookup: vi.fn(),
+  phoneRegistered: vi.fn(),
   getSchoolByCode: vi.fn(),
   createServiceRoleClient: vi.fn(),
 }));
@@ -33,10 +34,14 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   h.createServiceRoleClient.mockReturnValue({
     auth: { admin: { updateUserById: h.updateUserById, deleteUser: h.deleteUser } },
-    rpc: h.rpc,
+    // is_phone_registered (contrôle du numéro) a son propre mock : `h.rpc`
+    // ne voit que la finalisation (complete_registration).
+    rpc: (name: string, args: unknown) =>
+      name === "is_phone_registered" ? h.phoneRegistered(args) : h.rpc(name, args),
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: h.phoneLookup }) }) }),
   });
   h.phoneLookup.mockResolvedValue({ data: null });
+  h.phoneRegistered.mockResolvedValue({ data: false, error: null });
   h.signUp.mockResolvedValue({ data: { user: freshUser() }, error: null });
   h.updateUserById.mockResolvedValue({ error: null });
   h.deleteUser.mockResolvedValue({ error: null });
@@ -134,10 +139,41 @@ describe("registerAction — inscription atomique", () => {
 
   it("téléphone déjà utilisé détecté AVANT la création du compte", async () => {
     const { registerAction } = await import("./actions");
+    h.phoneRegistered.mockResolvedValue({ data: true, error: null });
+    const r = await registerAction(null, fd({ ...base, phone: "+221771234567" }));
+    expect(r?.fieldErrors?.phone).toContain("déjà utilisé");
+    expect(h.signUp).not.toHaveBeenCalled();
+  });
+
+  it("le contrôle du numéro interroge la fonction SQL qui regarde Auth ET les profils", async () => {
+    const { registerAction } = await import("./actions");
+    await expect(registerAction(null, fd({ ...base, phone: "77 123 45 67" }))).rejects.toThrow("REDIRECT:/dashboard");
+    expect(h.phoneRegistered).toHaveBeenCalledWith({ p_phone: "+221771234567" });
+    expect(h.phoneLookup).not.toHaveBeenCalled();
+  });
+
+  it("fonction SQL absente (migration 0032 non appliquée) : repli sur le contrôle des profils", async () => {
+    const { registerAction } = await import("./actions");
+    h.phoneRegistered.mockResolvedValue({ data: null, error: { code: "PGRST202", message: "function not found" } });
     h.phoneLookup.mockResolvedValue({ data: { id: "autre" } });
     const r = await registerAction(null, fd({ ...base, phone: "+221771234567" }));
     expect(r?.fieldErrors?.phone).toContain("déjà utilisé");
     expect(h.signUp).not.toHaveBeenCalled();
+
+    h.phoneLookup.mockResolvedValue({ data: null });
+    await expect(registerAction(null, fd({ ...base, phone: "+221771234567" }))).rejects.toThrow("REDIRECT:/dashboard");
+  });
+
+  it("numéro pris pendant l'inscription (course) : compte annulé, message « déjà utilisé »", async () => {
+    const { registerAction } = await import("./actions");
+    h.phoneRegistered
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    h.updateUserById.mockResolvedValue({ error: { message: "Error updating user" } });
+    const r = await registerAction(null, fd({ ...base, phone: "+221771234567" }));
+    expect(r?.fieldErrors?.phone).toContain("déjà utilisé");
+    expect(h.rpc).not.toHaveBeenCalled();
+    expect(h.deleteUser).toHaveBeenCalledWith("u1");
   });
 
   it("code établissement invalide : aucun compte créé", async () => {

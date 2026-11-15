@@ -16,11 +16,12 @@ export default async function SubjectProgrammePage(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
 
   if (!profile?.level_id) redirect("/onboarding");

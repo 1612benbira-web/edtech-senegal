@@ -23,18 +23,19 @@ export default async function ProgressPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("level_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
   if (!profile?.level_id) redirect("/onboarding");
 
   const [subjectsProgress, competencies, quizStats] = await Promise.all([
-    getSubjectsProgress(user!.id, profile.level_id),
-    getCompetencyMasteryList(user!.id),
-    getQuizStats(user!.id),
+    getSubjectsProgress(user.id, profile.level_id),
+    getCompetencyMasteryList(user.id),
+    getQuizStats(user.id),
   ]);
 
   const globalPercent =
