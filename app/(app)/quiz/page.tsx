@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Target } from "lucide-react";
+import { GraduationCap, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyProgramme } from "@/lib/queries/programme";
 import {
@@ -12,6 +13,8 @@ import {
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 import { Card } from "@/components/ui/card";
 import { getSubjectTheme } from "@/lib/constants/subject-theme";
+import { getLevelInfo } from "@/lib/services/examService";
+import { isBfemLevel } from "@/lib/algorithms/mockExam";
 
 export const metadata: Metadata = { title: "Quiz" };
 
@@ -28,7 +31,10 @@ export default async function QuizHubPage() {
     .single();
   if (!profile?.level_id) redirect("/onboarding");
 
-  const programmes = await getMyProgramme(user!.id, profile.level_id, profile.series_id);
+  const [programmes, level] = await Promise.all([
+    getMyProgramme(user!.id, profile.level_id, profile.series_id),
+    getLevelInfo(profile.level_id),
+  ]);
   const subjectsWithContent = programmes.filter((p) => p.curriculumId && p.totalChapters > 0);
 
   return (
@@ -37,6 +43,23 @@ export default async function QuizHubPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         Teste tes connaissances, matière par matière, ou laisse-toi guider par le quiz du jour.
       </p>
+
+      {isBfemLevel(level) && (
+        <Link
+          href="/bfem"
+          className="mb-4 flex items-center gap-3 rounded-xl border border-primary/30 bg-card p-4 transition hover:bg-muted"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <GraduationCap className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-foreground">BFEM blanc</span>
+            <span className="block text-xs text-muted-foreground">
+              Une épreuve chronométrée par matière, notée sur 20, avec le corrigé.
+            </span>
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">

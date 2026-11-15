@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare } from "lucide-react";
+import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { BrandLogo } from "@/components/brand-logo";
 
@@ -14,6 +14,8 @@ const NAV_ITEMS = [
   { href: "/progress", label: "Ma progression", icon: TrendingUp },
 ];
 
+const BFEM_ITEM = { href: "/bfem", label: "BFEM blanc", icon: GraduationCap };
+
 const SECONDARY_ITEMS = [
   { href: "/programme", label: "Révision", icon: RefreshCcw },
   { href: "/settings", label: "Paramètres", icon: Settings },
@@ -23,11 +25,18 @@ const SECONDARY_ITEMS = [
 export function AppSidebar({
   logoutAction,
   schoolName,
+  showBfem = false,
 }: {
   logoutAction: () => void;
   schoolName?: string;
+  /** Affiche l'entrée « BFEM blanc » (élèves de 3e uniquement). */
+  showBfem?: boolean;
 }) {
   const pathname = usePathname();
+  // Placée juste après « Quiz », dont elle est le prolongement.
+  const navItems = showBfem
+    ? NAV_ITEMS.flatMap((item) => (item.href === "/quiz" ? [item, BFEM_ITEM] : [item]))
+    : NAV_ITEMS;
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/80 bg-white lg:flex">
@@ -41,7 +50,7 @@ export function AppSidebar({
       </div>
 
       <nav className="flex-1 space-y-1.5 px-4 pt-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = pathname?.startsWith(item.href);
           return (
             <Link

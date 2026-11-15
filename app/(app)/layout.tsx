@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { ActivityHeartbeat } from "@/components/activity-heartbeat";
 import { getCurrentSchool } from "@/lib/services/schoolService";
 import { getMyNotifications, getMyUnreadNotificationCount } from "@/lib/services/notificationService";
+import { isBfemLevel } from "@/lib/algorithms/mockExam";
 
 export default async function AppLayout({
   children,
@@ -24,7 +25,7 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name")
+    .select("first_name, level_id")
     .eq("id", user.id)
     .single();
 
@@ -42,15 +43,30 @@ export default async function AppLayout({
     redirect("/teacher");
   }
 
-  const [initialNotifications, initialUnreadCount] = await Promise.all([
+  // Le niveau sert uniquement à afficher l'entrée « BFEM blanc » aux élèves
+  // de 3e. Requête séparée (et non jointure sur profiles) pour que la
+  // lecture du profil ci-dessus ne dépende jamais de cette information.
+  const [initialNotifications, initialUnreadCount, level] = await Promise.all([
     getMyNotifications(),
     getMyUnreadNotificationCount(),
+    profile?.level_id
+      ? supabase
+          .from("school_levels")
+          .select("code, name")
+          .eq("id", profile.level_id)
+          .maybeSingle()
+          .then((result) => result.data)
+      : null,
   ]);
 
   return (
     <div className="flex min-h-screen min-w-0 overflow-x-clip">
       <ActivityHeartbeat />
-      <AppSidebar logoutAction={logoutAction} schoolName={currentSchool?.schoolName} />
+      <AppSidebar
+        logoutAction={logoutAction}
+        schoolName={currentSchool?.schoolName}
+        showBfem={isBfemLevel(level)}
+      />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <AppTopBar
           firstName={profile?.first_name ?? ""}
