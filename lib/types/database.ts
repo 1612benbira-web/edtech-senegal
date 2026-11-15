@@ -351,7 +351,7 @@ export interface Database {
         Row: {
           id: string;
           profile_id: string;
-          type: "chapter" | "subject" | "review" | "evaluation" | "daily";
+          type: "chapter" | "subject" | "review" | "evaluation" | "daily" | "exam";
           subject_id: string | null;
           chapter_id: string | null;
           score: number | null;
