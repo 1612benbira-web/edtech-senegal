@@ -7,6 +7,8 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  // Lecteur hors connexion : aucune donnée serveur, tout vient de l'appareil.
+  "/hors-ligne",
 ];
 
 function isPublicPath(pathname: string) {

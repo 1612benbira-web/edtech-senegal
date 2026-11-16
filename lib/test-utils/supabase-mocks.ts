@@ -25,6 +25,7 @@ export function makeQueryChain(result: { data: unknown; error: unknown }) {
     eq: vi.fn(() => chain),
     or: vi.fn(() => chain),
     is: vi.fn(() => chain),
+    not: vi.fn(() => chain),
     in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(() => chain),

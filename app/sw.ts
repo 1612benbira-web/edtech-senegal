@@ -16,6 +16,12 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Page affichée quand une page ne peut pas être chargée faute de connexion
+// et qu'elle n'a jamais été visitée (donc absente du cache) : le lecteur des
+// leçons téléchargées. Elle est mise en cache à l'installation du service
+// worker (voir additionalPrecacheEntries dans next.config.js).
+const OFFLINE_FALLBACK_URL = "/hors-ligne";
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   // Une nouvelle version du service worker prend immédiatement le relais
@@ -30,6 +36,16 @@ const serwist = new Serwist({
   // sur le cache en cas de perte de connexion, plutôt que "cache only",
   // pour ne jamais servir une leçon ou un quiz périmé par erreur.
   runtimeCaching: defaultCache,
+  fallbacks: {
+    entries: [
+      {
+        url: OFFLINE_FALLBACK_URL,
+        matcher({ request }) {
+          return request.destination === "document";
+        },
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();

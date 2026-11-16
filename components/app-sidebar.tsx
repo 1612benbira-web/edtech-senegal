@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare, GraduationCap } from "lucide-react";
+import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare, GraduationCap, Download } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { BrandLogo } from "@/components/brand-logo";
 
@@ -18,6 +18,7 @@ const BFEM_ITEM = { href: "/bfem", label: "BFEM blanc", icon: GraduationCap };
 
 const SECONDARY_ITEMS = [
   { href: "/programme", label: "Révision", icon: RefreshCcw },
+  { href: "/hors-ligne", label: "Téléchargements", icon: Download },
   { href: "/settings", label: "Paramètres", icon: Settings },
   { href: "/profile", label: "Profil", icon: User },
 ];
