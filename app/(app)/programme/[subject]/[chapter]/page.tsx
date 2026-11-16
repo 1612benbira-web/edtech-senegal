@@ -7,6 +7,7 @@ import { getMyProgramme } from "@/lib/queries/programme";
 import { createClient } from "@/lib/supabase/server";
 import { startChapterQuizAction } from "@/app/(app)/quiz/actions";
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
+import { DownloadChapterButton } from "@/components/offline/download-chapter-button";
 
 export default async function ChapterPage(
   props: {
@@ -69,6 +70,7 @@ export default async function ChapterPage(
             <p className="mt-2 text-xs font-semibold text-success">✓ Chapitre terminé</p>
           )}
         </div>
+        {lessons.length > 0 && <DownloadChapterButton chapterId={chapter.id} />}
       </section>
 
       <div className="space-y-2">
