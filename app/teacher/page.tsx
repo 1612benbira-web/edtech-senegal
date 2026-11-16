@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GraduationCap, Dumbbell, MessageSquare } from "lucide-react";
+import { GraduationCap, Dumbbell, MessageSquare, Users } from "lucide-react";
 import { getCurrentSchool } from "@/lib/services/schoolService";
 import { requireTeacherAccess } from "@/lib/services/adminGuard";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -30,10 +30,16 @@ export default async function TeacherOverviewPage() {
               subtitle={a.school_series?.name ? `Série ${a.school_series.name}` : "Toutes séries"}
               href="/teacher/exercises"
               actions={
-                <Link href={`/teacher/messages?levelId=${a.level_id}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                  <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                  Écrire au niveau
-                </Link>
+                <span className="flex flex-wrap items-center gap-3">
+                  <Link href={`/teacher/classes?a=${a.id}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                    <Users className="h-3 w-3" aria-hidden="true" />
+                    Suivi de la classe
+                  </Link>
+                  <Link href={`/teacher/messages?levelId=${a.level_id}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                    Écrire au niveau
+                  </Link>
+                </span>
               }
             />
           ))}
