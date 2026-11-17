@@ -19,6 +19,14 @@ const withSerwist = require("@serwist/next").default({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Le mode BFEM est devenu « épreuves blanches » (BFEM en 3e, Bac en
+  // Terminale) : les anciennes adresses restent valables.
+  async redirects() {
+    return [
+      { source: "/bfem", destination: "/examen-blanc", permanent: true },
+      { source: "/bfem/:examId", destination: "/examen-blanc/:examId", permanent: true },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",

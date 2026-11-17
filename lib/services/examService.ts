@@ -7,7 +7,7 @@ import {
 } from "@/lib/algorithms/mockExam";
 
 /**
- * Épreuve blanche (mode BFEM) : une tentative de quiz de type "exam",
+ * Épreuve blanche (BFEM en 3e, Bac en Terminale) : une tentative de quiz de type "exam",
  * chronométrée et notée sur 20. Elle réutilise les tables et la correction
  * des quiz existants (quiz_attempts, quiz_questions, gradeQuizAction).
  */
@@ -35,26 +35,18 @@ export async function getLevelInfo(levelId: string) {
 }
 
 /**
- * Questions publiées d'une matière pour un niveau, avec leur chapitre.
- * Même périmètre que le quiz de matière (programmes publiés visibles par
- * l'élève, la RLS s'applique), limité aux types affichables en épreuve.
+ * Questions publiées d'un programme, avec leur chapitre, limitées aux types
+ * affichables en épreuve. Le programme est celui que suit l'élève (choisi
+ * par getMyProgramme : programme de son école, puis national, et toujours
+ * celui de sa série) ; la session de l'élève s'applique (RLS).
  */
-async function getExamCandidates(subjectId: string, levelId: string): Promise<ExamCandidate[]> {
+async function getExamCandidates(curriculumId: string): Promise<ExamCandidate[]> {
   const supabase = await createClient();
-
-  const { data: curriculums } = await supabase
-    .from("curriculums")
-    .select("id")
-    .eq("subject_id", subjectId)
-    .eq("level_id", levelId)
-    .eq("status", "published");
-  const curriculumIds = (curriculums ?? []).map((c) => c.id);
-  if (curriculumIds.length === 0) return [];
 
   const { data: chapters } = await supabase
     .from("chapters")
     .select("id")
-    .in("curriculum_id", curriculumIds)
+    .eq("curriculum_id", curriculumId)
     .eq("status", "published")
     .is("deleted_at", null);
   const chapterIds = (chapters ?? []).map((c) => c.id);
@@ -113,10 +105,10 @@ export type GenerateMockExamResult =
 export async function generateMockExam(
   profileId: string,
   subjectId: string,
-  levelId: string,
+  curriculumId: string,
   count: number = EXAM_QUESTION_COUNT
 ): Promise<GenerateMockExamResult> {
-  const candidates = await getExamCandidates(subjectId, levelId);
+  const candidates = await getExamCandidates(curriculumId);
   const questionIds = pickBalancedQuestions(candidates, count);
   if (questionIds.length === 0) return { ok: false, reason: "no_questions" };
 

@@ -1,30 +1,30 @@
-# Mode BFEM — épreuve blanche chronométrée
+# Épreuves blanches — BFEM et Bac
 
-Réservé aux élèves de 3e. Page : `/bfem` (lien dans la barre latérale et en haut de la page Quiz).
+Pour les classes d'examen : **BFEM blanc** en 3e, **Bac blanc** en Terminale. Page : `/examen-blanc` (lien dans la barre latérale et en haut de la page Quiz). Les anciennes adresses `/bfem` y redirigent.
 
 ## Ce que fait l'élève
 
-1. Il choisit une matière et commence l'épreuve : 20 questions tirées de tous les chapitres publiés de la matière, 30 minutes (90 secondes par question).
+1. Il choisit une matière et commence l'épreuve : 20 questions tirées de tous les chapitres publiés du programme qu'il suit dans « Mon programme » (celui de son école s'il existe, sinon le national, et toujours celui de sa série : en Terminale, Maths S2 et Maths L2 sont distincts), 30 minutes (90 secondes par question).
 2. Il répond une question à la fois, peut revenir en arrière, et rend sa copie quand il veut. À la fin du temps, la copie est rendue automatiquement.
 3. Il obtient sa note sur 20, ses résultats par chapitre (du moins réussi au mieux réussi) et le corrigé de chaque question.
-4. La page `/bfem` garde l'historique des épreuves et affiche la moyenne de la dernière note de chaque matière.
+4. La page `/examen-blanc` garde l'historique des épreuves et affiche la moyenne de la dernière note de chaque matière.
 
-Les questions viennent de la banque de questions de la plateforme : ce ne sont pas les sujets officiels du BFEM, et la moyenne affichée n'applique pas les coefficients de l'examen.
+Les questions viennent de la banque de questions de la plateforme : ce ne sont pas les sujets officiels du BFEM ni du Bac, et la moyenne affichée n'applique pas les coefficients de l'examen.
 
 ## Mise en service
 
 Appliquer la migration `supabase/migrations/0031_exam_quiz_type.sql` (staging d'abord). Elle autorise le type de quiz `exam` et ajoute un index ; aucune colonne ni table nouvelle.
 
-Tant qu'elle n'est pas appliquée, le reste de l'application fonctionne comme avant et le bouton « Commencer l'épreuve » affiche « Le mode BFEM n'est pas encore activé ».
+Tant qu'elle n'est pas appliquée, le reste de l'application fonctionne comme avant et le bouton « Commencer l'épreuve » affiche « Les épreuves blanches ne sont pas encore activées ».
 
-Il faut aussi du contenu 3e **publié** : une matière sans question publiée affiche un message au lieu de lancer une épreuve.
+Il faut aussi du contenu **publié** dans la classe (3e ou Terminale) : une matière sans question publiée affiche un message au lieu de lancer une épreuve.
 
 ## Comment c'est construit
 
 - Une épreuve est une ligne `quiz_attempts` de type `exam` avec ses `quiz_questions` : mêmes règles d'accès (RLS) et même correction (`gradeQuizAction`) que les autres quiz, donc XP, série de jours, badges et maîtrise par compétence sont mis à jour comme d'habitude.
 - Règles (tirage équilibré par chapitre, durée, note, appréciation) : `lib/algorithms/mockExam.ts`, testées dans `mockExam.test.ts`.
 - Accès aux données : `lib/services/examService.ts`. Les bonnes réponses ne sont lues (client service_role) qu'une fois l'épreuve terminée et après vérification qu'elle appartient à l'élève.
-- Écrans : `app/(app)/bfem/`.
+- Écrans : `app/(app)/examen-blanc/`. La classe d'examen est reconnue par `getExamForLevel` (3e → BFEM, Terminale → Bac).
 
 ## Limites connues
 

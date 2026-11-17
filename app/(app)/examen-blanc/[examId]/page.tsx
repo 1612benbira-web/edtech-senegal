@@ -4,8 +4,14 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getQuizAttempt, getQuizQuestions } from "@/lib/queries/quiz";
-import { getExamCorrection } from "@/lib/services/examService";
-import { examDurationSeconds, examRemainingSeconds, isExamQuestionType } from "@/lib/algorithms/mockExam";
+import { getExamCorrection, getLevelInfo } from "@/lib/services/examService";
+import {
+  EXAM_HUB_PATH,
+  examDurationSeconds,
+  examRemainingSeconds,
+  getExamForLevel,
+  isExamQuestionType,
+} from "@/lib/algorithms/mockExam";
 import { ExamRunnerLoader } from "./exam-runner-loader";
 import { ExamResult } from "./exam-result";
 import type { ExamQuestion } from "./exam-runner";
@@ -24,20 +30,25 @@ export default async function ExamPage(props: { params: Promise<{ examId: string
   if (!exam) notFound();
   if (exam.type !== "exam") redirect(`/quiz/${params.examId}`);
 
-  const { data: subject } = exam.subject_id
-    ? await supabase.from("subjects").select("id, name").eq("id", exam.subject_id).maybeSingle()
-    : { data: null };
+  const [{ data: subject }, { data: profile }] = await Promise.all([
+    exam.subject_id
+      ? supabase.from("subjects").select("id, name").eq("id", exam.subject_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from("profiles").select("level_id").eq("id", user.id).maybeSingle(),
+  ]);
+  const examKind = getExamForLevel(profile?.level_id ? await getLevelInfo(profile.level_id) : null);
+  const hubLabel = examKind?.label ?? "Épreuves blanches";
   const subjectName = subject?.name ?? "Épreuve";
   const totalQuestions = exam.total_questions ?? 0;
 
   const header = (
     <>
       <Link
-        href="/bfem"
+        href={EXAM_HUB_PATH}
         className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground hover:underline"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        BFEM blanc
+        {hubLabel}
       </Link>
       <h1 className="mb-1 text-xl font-bold text-foreground">Épreuve blanche · {subjectName}</h1>
     </>
@@ -55,6 +66,7 @@ export default async function ExamPage(props: { params: Promise<{ examId: string
           startedAt={exam.started_at}
           completedAt={exam.completed_at}
           correction={correction ?? []}
+          hubLabel={hubLabel}
         />
       </div>
     );

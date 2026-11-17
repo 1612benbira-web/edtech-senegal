@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, BookOpen, Target, TrendingUp, Settings, User, LogOut, RefreshCcw, MessageSquare, GraduationCap, Download } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { BrandLogo } from "@/components/brand-logo";
+import { EXAM_HUB_PATH } from "@/lib/algorithms/mockExam";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -14,7 +15,6 @@ const NAV_ITEMS = [
   { href: "/progress", label: "Ma progression", icon: TrendingUp },
 ];
 
-const BFEM_ITEM = { href: "/bfem", label: "BFEM blanc", icon: GraduationCap };
 
 const SECONDARY_ITEMS = [
   { href: "/programme", label: "Révision", icon: RefreshCcw },
@@ -26,17 +26,19 @@ const SECONDARY_ITEMS = [
 export function AppSidebar({
   logoutAction,
   schoolName,
-  showBfem = false,
+  examLabel = null,
 }: {
   logoutAction: () => void;
   schoolName?: string;
-  /** Affiche l'entrée « BFEM blanc » (élèves de 3e uniquement). */
-  showBfem?: boolean;
+  /** Entrée « BFEM blanc » (3e) ou « Bac blanc » (Terminale) ; aucune pour les autres classes. */
+  examLabel?: string | null;
 }) {
   const pathname = usePathname();
   // Placée juste après « Quiz », dont elle est le prolongement.
-  const navItems = showBfem
-    ? NAV_ITEMS.flatMap((item) => (item.href === "/quiz" ? [item, BFEM_ITEM] : [item]))
+  const navItems = examLabel
+    ? NAV_ITEMS.flatMap((item) =>
+        item.href === "/quiz" ? [item, { href: EXAM_HUB_PATH, label: examLabel, icon: GraduationCap }] : [item]
+      )
     : NAV_ITEMS;
 
   return (
