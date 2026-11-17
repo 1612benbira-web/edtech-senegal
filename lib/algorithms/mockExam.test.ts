@@ -7,7 +7,7 @@ import {
   examRemainingSeconds,
   formatCountdown,
   formatNote,
-  isBfemLevel,
+  getExamForLevel,
   isExamQuestionType,
   pickBalancedQuestions,
   summarizeByChapter,
@@ -29,19 +29,26 @@ function candidates(perChapter: Record<string, number>): ExamCandidate[] {
   );
 }
 
-describe("isBfemLevel", () => {
-  it("reconnaît la 3e par son code ou son nom", () => {
-    expect(isBfemLevel({ code: "3e", name: "3e" })).toBe(true);
-    expect(isBfemLevel({ code: "niveau_x", name: "3ème" })).toBe(true);
-    expect(isBfemLevel({ code: "3EME", name: null })).toBe(true);
-    expect(isBfemLevel({ code: null, name: " 3 e " })).toBe(true);
+describe("getExamForLevel", () => {
+  it("associe la 3e au BFEM, par son code ou son nom", () => {
+    expect(getExamForLevel({ code: "3e", name: "3e" })?.id).toBe("bfem");
+    expect(getExamForLevel({ code: "niveau_x", name: "3ème" })?.id).toBe("bfem");
+    expect(getExamForLevel({ code: "3EME", name: null })?.id).toBe("bfem");
+    expect(getExamForLevel({ code: null, name: " 3 e " })?.id).toBe("bfem");
   });
 
-  it("refuse les autres niveaux", () => {
-    expect(isBfemLevel({ code: "4e", name: "4e" })).toBe(false);
-    expect(isBfemLevel({ code: "demo_6e", name: "[DEMO] 6e" })).toBe(false);
-    expect(isBfemLevel({ code: "terminale", name: "Terminale" })).toBe(false);
-    expect(isBfemLevel(null)).toBe(false);
+  it("associe la Terminale au Bac", () => {
+    expect(getExamForLevel({ code: "terminale", name: "Terminale" })).toMatchObject({ id: "bac", label: "Bac blanc", levelLabel: "Terminale" });
+    expect(getExamForLevel({ code: null, name: "Tle" })?.id).toBe("bac");
+    expect(getExamForLevel({ code: null, name: "Tle." })?.id).toBe("bac");
+  });
+
+  it("ne propose rien aux autres classes", () => {
+    expect(getExamForLevel({ code: "4e", name: "4e" })).toBeNull();
+    expect(getExamForLevel({ code: "demo_6e", name: "[DEMO] 6e" })).toBeNull();
+    expect(getExamForLevel({ code: "premiere", name: "Première" })).toBeNull();
+    expect(getExamForLevel({ code: "seconde", name: "Seconde" })).toBeNull();
+    expect(getExamForLevel(null)).toBeNull();
   });
 });
 

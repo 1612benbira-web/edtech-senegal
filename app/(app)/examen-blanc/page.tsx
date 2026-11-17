@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyProgramme } from "@/lib/queries/programme";
 import { getLevelInfo, getMyExamAttempts } from "@/lib/services/examService";
 import {
+  EXAM_HUB_PATH,
   EXAM_QUESTION_COUNT,
   averageNote,
   examAppreciation,
@@ -13,20 +14,20 @@ import {
   examNote,
   examRemainingSeconds,
   formatNote,
-  isBfemLevel,
+  getExamForLevel,
 } from "@/lib/algorithms/mockExam";
 import { getSubjectTheme } from "@/lib/constants/subject-theme";
 import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 import { Card } from "@/components/ui/card";
 import { startMockExamAction } from "./actions";
 
-export const metadata: Metadata = { title: "BFEM blanc" };
+export const metadata: Metadata = { title: "Épreuves blanches" };
 
 const ERROR_MESSAGES: Record<string, string> = {
   no_questions:
     "Il n'y a pas encore assez de questions publiées dans cette matière pour composer une épreuve.",
   unavailable:
-    "Le mode BFEM n'est pas encore activé sur cette plateforme. Préviens ton établissement ou réessaie plus tard.",
+    "Les épreuves blanches ne sont pas encore activées sur cette plateforme. Préviens ton établissement ou réessaie plus tard.",
 };
 
 const DATE_FORMAT = new Intl.DateTimeFormat("fr-FR", {
@@ -35,7 +36,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Africa/Dakar",
 });
 
-export default async function BfemHubPage(props: {
+export default async function ExamHubPage(props: {
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const searchParams = await props.searchParams;
@@ -53,14 +54,15 @@ export default async function BfemHubPage(props: {
   if (!profile?.level_id) redirect("/onboarding");
 
   const level = await getLevelInfo(profile.level_id);
-  if (!isBfemLevel(level)) {
+  const exam = getExamForLevel(level);
+  if (!exam) {
     return (
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-2 text-xl font-bold text-foreground">BFEM blanc</h1>
+        <h1 className="mb-2 text-xl font-bold text-foreground">Épreuves blanches</h1>
         <Card>
           <p className="text-sm leading-6 text-muted-foreground">
-            Les épreuves blanches du BFEM sont réservées aux élèves de 3e. Dans ta classe, tu peux
-            t&apos;entraîner avec les quiz de matière et le quiz du jour.
+            Les épreuves blanches sont réservées aux classes d&apos;examen : le BFEM en 3e et le Bac en
+            Terminale. Dans ta classe, tu peux t&apos;entraîner avec les quiz de matière et le quiz du jour.
           </p>
           <Link href="/quiz" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
             Aller aux quiz
@@ -96,12 +98,13 @@ export default async function BfemHubPage(props: {
     <div>
       <h1 className="mb-2 flex items-center gap-2 text-xl font-bold text-foreground">
         <GraduationCap className="h-5 w-5 text-primary" aria-hidden="true" />
-        BFEM blanc
+        {exam.label}
       </h1>
       <p className="mb-6 max-w-2xl text-sm leading-6 text-muted-foreground">
         Entraîne-toi dans les conditions d&apos;un examen : une épreuve par matière, en temps
-        limité, notée sur 20, avec le corrigé à la fin. Les questions sont tirées de tout le
-        programme de 3e de la plateforme ; ce ne sont pas les sujets officiels du BFEM.
+        limité, notée sur 20, avec le corrigé à la fin. Les questions sont tirées de tout ton
+        programme de {exam.levelLabel} sur la plateforme ; ce ne sont pas les sujets officiels du{" "}
+        {exam.name}.
       </p>
 
       {errorMessage && (
@@ -123,7 +126,7 @@ export default async function BfemHubPage(props: {
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {average === null
               ? "Passe une première épreuve pour l'obtenir."
-              : "Moyenne simple de ta dernière note dans chaque matière, sans les coefficients du BFEM."}
+              : `Moyenne simple de ta dernière note dans chaque matière, sans les coefficients du ${exam.name}.`}
           </p>
         </Card>
         <Card className="flex items-start gap-3">
@@ -209,7 +212,7 @@ export default async function BfemHubPage(props: {
               return (
                 <li key={attempt.id}>
                   <Link
-                    href={`/bfem/${attempt.id}`}
+                    href={`${EXAM_HUB_PATH}/${attempt.id}`}
                     className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-muted"
                   >
                     <span className="min-w-0">

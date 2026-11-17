@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getQuizAttempt, getQuizQuestions } from "@/lib/queries/quiz";
 import { QuizRunner } from "./quiz-runner";
+import { EXAM_HUB_PATH } from "@/lib/algorithms/mockExam";
 
 const TYPE_LABELS: Record<string, string> = {
   chapter: "Quiz de chapitre",
@@ -22,7 +23,7 @@ export default async function QuizPage(props: { params: Promise<{ quizId: string
   const quiz = await getQuizAttempt(params.quizId, user.id);
   if (!quiz) notFound();
   // Une épreuve blanche a son propre écran (chronomètre, note sur 20).
-  if (quiz.type === "exam") redirect(`/bfem/${params.quizId}`);
+  if (quiz.type === "exam") redirect(`${EXAM_HUB_PATH}/${params.quizId}`);
 
   const quizQuestions = await getQuizQuestions(params.quizId);
   const questions = quizQuestions.map((qq: any) => qq.questions).filter(Boolean);

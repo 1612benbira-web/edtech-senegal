@@ -1,5 +1,5 @@
 /**
- * Règles de l'épreuve blanche (mode BFEM). Fonctions pures, sans accès à la
+ * Règles des épreuves blanches (BFEM en 3e, Bac en Terminale). Fonctions pures, sans accès à la
  * base, pour pouvoir être testées et réutilisées côté serveur comme côté
  * client (le chronomètre utilise les mêmes calculs que le serveur).
  */
@@ -27,19 +27,52 @@ export function isExamQuestionType(type: string): boolean {
   return (EXAM_QUESTION_TYPES as readonly string[]).includes(type);
 }
 
+export type ExamId = "bfem" | "bac";
+
+export interface ExamKind {
+  id: ExamId;
+  /** Nom de l'examen : « BFEM », « Bac ». */
+  name: string;
+  /** Nom du mode : « BFEM blanc », « Bac blanc ». */
+  label: string;
+  /** Classe concernée, pour les textes : « 3e », « Terminale ». */
+  levelLabel: string;
+}
+
+export const EXAMS: Record<ExamId, ExamKind> = {
+  bfem: { id: "bfem", name: "BFEM", label: "BFEM blanc", levelLabel: "3e" },
+  bac: { id: "bac", name: "Bac", label: "Bac blanc", levelLabel: "Terminale" },
+};
+
+/** Adresse des épreuves blanches. */
+export const EXAM_HUB_PATH = "/examen-blanc";
+
+function normalizeLevel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.]+/g, "");
+}
+
 /**
- * Le mode BFEM s'adresse à la classe de 3e (classe d'examen du cycle moyen).
- * On accepte le code ou le nom du niveau ("3e", "3ème", "3eme", "3 e").
+ * Examen préparé par une classe : le BFEM en 3e (fin du cycle moyen), le
+ * Bac en Terminale. Les autres classes n'ont pas d'épreuve blanche. On
+ * accepte le code ou le nom du niveau (« 3e », « 3ème », « terminale »,
+ * « Tle »...).
  */
-export function isBfemLevel(
+export function getExamForLevel(
   level: { code?: string | null; name?: string | null } | null | undefined
-): boolean {
-  if (!level) return false;
-  return [level.code, level.name].some((value) => {
-    if (!value) return false;
-    const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
-    return /^3(e|è|eme|ème)$/.test(normalized);
-  });
+): ExamKind | null {
+  if (!level) return null;
+  for (const value of [level.code, level.name]) {
+    if (!value) continue;
+    const normalized = normalizeLevel(value);
+    if (/^3(e|eme)$/.test(normalized)) return EXAMS.bfem;
+    if (normalized === "terminale" || normalized === "tle") return EXAMS.bac;
+  }
+  return null;
 }
 
 export interface ExamCandidate {

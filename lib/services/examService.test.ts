@@ -27,7 +27,6 @@ function setTables(tables: Record<string, Result>) {
 }
 
 const CONTENT: Record<string, Result> = {
-  curriculums: { data: [{ id: "cur1" }], error: null },
   chapters: { data: [{ id: "ch1" }], error: null },
   lessons: { data: [{ id: "l1", chapter_id: "ch1" }], error: null },
   exercises: { data: [{ id: "e1", lesson_id: "l1" }], error: null },
@@ -47,10 +46,21 @@ describe("generateMockExam", () => {
   });
 
   it("signale l'absence de questions sans créer d'épreuve", async () => {
-    setTables({ curriculums: { data: [], error: null } });
-    const result = await generateMockExam("p1", "s1", "lvl1");
+    setTables({ chapters: { data: [], error: null } });
+    const result = await generateMockExam("p1", "s1", "cur1");
     expect(result).toEqual({ ok: false, reason: "no_questions" });
     expect(mocks.chains.quiz_attempts).toBeUndefined();
+  });
+
+  it("tire les questions dans le seul programme de l'élève", async () => {
+    setTables({
+      ...CONTENT,
+      quiz_attempts: { data: { id: "exam1" }, error: null },
+      quiz_questions: { data: null, error: null },
+    });
+    await generateMockExam("p1", "s1", "cur1");
+    expect(mocks.chains.curriculums).toBeUndefined();
+    expect(mocks.chains.chapters?.[0].eq).toHaveBeenCalledWith("curriculum_id", "cur1");
   });
 
   it("crée l'épreuve avec les seules questions affichables", async () => {
@@ -59,7 +69,7 @@ describe("generateMockExam", () => {
       quiz_attempts: { data: { id: "exam1" }, error: null },
       quiz_questions: { data: null, error: null },
     });
-    const result = await generateMockExam("p1", "s1", "lvl1");
+    const result = await generateMockExam("p1", "s1", "cur1");
     expect(result).toEqual({ ok: true, examId: "exam1" });
 
     expect(mocks.chains.quiz_attempts?.[0].insert).toHaveBeenCalledWith({
@@ -80,7 +90,7 @@ describe("generateMockExam", () => {
 
   it("répond « indisponible » tant que la migration 0031 n'est pas appliquée", async () => {
     setTables({ ...CONTENT, quiz_attempts: { data: null, error: { code: "23514" } } });
-    const result = await generateMockExam("p1", "s1", "lvl1");
+    const result = await generateMockExam("p1", "s1", "cur1");
     expect(result).toEqual({ ok: false, reason: "unavailable" });
     expect(mocks.chains.quiz_questions).toBeUndefined();
   });
@@ -91,7 +101,7 @@ describe("generateMockExam", () => {
       quiz_attempts: { data: { id: "exam1" }, error: null },
       quiz_questions: { data: null, error: { code: "XX000", message: "boom" } },
     });
-    await expect(generateMockExam("p1", "s1", "lvl1")).rejects.toMatchObject({ code: "XX000" });
+    await expect(generateMockExam("p1", "s1", "cur1")).rejects.toMatchObject({ code: "XX000" });
     const cleanup = mocks.chains.quiz_attempts?.[1];
     expect(cleanup.delete).toHaveBeenCalled();
     expect(cleanup.eq).toHaveBeenCalledWith("id", "exam1");

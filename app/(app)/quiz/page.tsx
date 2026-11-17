@@ -14,7 +14,7 @@ import { StartQuizButton } from "@/components/quiz/start-quiz-button";
 import { Card } from "@/components/ui/card";
 import { getSubjectTheme } from "@/lib/constants/subject-theme";
 import { getLevelInfo } from "@/lib/services/examService";
-import { isBfemLevel } from "@/lib/algorithms/mockExam";
+import { EXAM_HUB_PATH, getExamForLevel } from "@/lib/algorithms/mockExam";
 
 export const metadata: Metadata = { title: "Quiz" };
 
@@ -38,6 +38,8 @@ export default async function QuizHubPage() {
   ]);
   const subjectsWithContent = programmes.filter((p) => p.curriculumId && p.totalChapters > 0);
 
+  const exam = getExamForLevel(level);
+
   return (
     <div>
       <h1 className="mb-2 text-xl font-bold text-foreground">Quiz</h1>
@@ -45,16 +47,16 @@ export default async function QuizHubPage() {
         Teste tes connaissances, matière par matière, ou laisse-toi guider par le quiz du jour.
       </p>
 
-      {isBfemLevel(level) && (
+      {exam && (
         <Link
-          href="/bfem"
+          href={EXAM_HUB_PATH}
           className="mb-4 flex items-center gap-3 rounded-xl border border-primary/30 bg-card p-4 transition hover:bg-muted"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <GraduationCap className="h-5 w-5" aria-hidden="true" />
           </span>
           <span>
-            <span className="block text-sm font-semibold text-foreground">BFEM blanc</span>
+            <span className="block text-sm font-semibold text-foreground">{exam.label}</span>
             <span className="block text-xs text-muted-foreground">
               Une épreuve chronométrée par matière, notée sur 20, avec le corrigé.
             </span>

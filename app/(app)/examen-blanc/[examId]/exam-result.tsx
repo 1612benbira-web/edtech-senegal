@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import {
+  EXAM_HUB_PATH,
   examAppreciation,
   examNote,
   formatNote,
@@ -23,6 +24,7 @@ export function ExamResult({
   startedAt,
   completedAt,
   correction,
+  hubLabel,
 }: {
   subjectId: string | null;
   correctAnswers: number;
@@ -30,6 +32,8 @@ export function ExamResult({
   startedAt: string;
   completedAt: string;
   correction: ExamCorrectionItem[];
+  /** « BFEM blanc », « Bac blanc »... pour le lien de retour. */
+  hubLabel: string;
 }) {
   const note = examNote(correctAnswers, totalQuestions);
   const passed = note >= 10;
@@ -138,8 +142,8 @@ export function ExamResult({
         {subjectId && (
           <StartQuizButton action={startMockExamAction} arg={subjectId} label="Passer une nouvelle épreuve" />
         )}
-        <Link href="/bfem" className="text-sm font-medium text-primary hover:underline">
-          Retour au BFEM blanc
+        <Link href={EXAM_HUB_PATH} className="text-sm font-medium text-primary hover:underline">
+          Retour au {hubLabel}
         </Link>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { ActivityHeartbeat } from "@/components/activity-heartbeat";
 import { getCurrentSchool } from "@/lib/services/schoolService";
 import { getMyNotifications, getMyUnreadNotificationCount } from "@/lib/services/notificationService";
-import { isBfemLevel } from "@/lib/algorithms/mockExam";
+import { getExamForLevel } from "@/lib/algorithms/mockExam";
 
 export default async function AppLayout({
   children,
@@ -43,8 +43,8 @@ export default async function AppLayout({
     redirect("/teacher");
   }
 
-  // Le niveau sert uniquement à afficher l'entrée « BFEM blanc » aux élèves
-  // de 3e. Requête séparée (et non jointure sur profiles) pour que la
+  // Le niveau sert uniquement à afficher l'entrée « BFEM blanc » (3e) ou
+  // « Bac blanc » (Terminale). Requête séparée (et non jointure sur profiles) pour que la
   // lecture du profil ci-dessus ne dépende jamais de cette information.
   const [initialNotifications, initialUnreadCount, level] = await Promise.all([
     getMyNotifications(),
@@ -65,7 +65,7 @@ export default async function AppLayout({
       <AppSidebar
         logoutAction={logoutAction}
         schoolName={currentSchool?.schoolName}
-        showBfem={isBfemLevel(level)}
+        examLabel={getExamForLevel(level)?.label ?? null}
       />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <AppTopBar
